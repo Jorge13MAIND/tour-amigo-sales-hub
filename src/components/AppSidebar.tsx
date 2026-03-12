@@ -31,7 +31,7 @@ export function AppSidebar() {
   }, [isDark]);
 
   const items = [
-    { title: 'Dashboard', url: '/', icon: LayoutGrid, badge: 0 },
+    { title: 'Dashboard', url: '/', icon: LayoutGrid, badge: 0, badgeColor: '' },
     { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
     { title: 'Decisions', url: '/decisions', icon: ClipboardCheck, badge: pendingDecisions || 0, badgeColor: 'bg-risk-medium text-white' },
     ...(showMetrics ? [{ title: 'Metrics', url: '/metrics', icon: TrendingUp, badge: 0, badgeColor: '' }] : []),
@@ -40,7 +40,6 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarContent className="bg-sidebar">
-        {/* Logo area */}
         <div className="p-5 pb-6">
           {!collapsed ? (
             <div>
@@ -84,7 +83,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-4">
+        <div className="mt-auto p-4 space-y-3">
           <button
             onClick={() => setIsDark(!isDark)}
             className="flex items-center gap-2.5 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors w-full px-3 py-2 rounded-lg hover:bg-sidebar-accent"
@@ -92,6 +91,20 @@ export function AppSidebar() {
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             {!collapsed && <span>{isDark ? 'Light mode' : 'Dark mode'}</span>}
           </button>
+          {!collapsed && (
+            <div className="px-3 pt-2 border-t border-sidebar-border">
+              <p className="text-[10px] text-sidebar-foreground/30 font-medium">TA Command Center v1.0</p>
+              <p className="text-[10px] text-sidebar-foreground/30">Powered by Atlas</p>
+              <a
+                href="https://app.hubspot.com/contacts/45479361/objects/0-3/views/all/list"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-sidebar-primary/70 hover:text-sidebar-primary mt-1 inline-block"
+              >
+                Open HubSpot →
+              </a>
+            </div>
+          )}
         </div>
       </SidebarContent>
     </Sidebar>

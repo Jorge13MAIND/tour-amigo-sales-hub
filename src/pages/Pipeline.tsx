@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, memo } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { useDeals } from '@/hooks/useDeals';
 import { RiskBadge } from '@/components/RiskBadge';
@@ -54,7 +54,6 @@ export default function Pipeline() {
 
   return (
     <div className="space-y-5">
-      {/* Filters */}
       <div className="flex items-center gap-4 p-4 rounded-xl bg-card border shadow-sm">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Filters</span>
         <div className="w-px h-5 bg-border" />
@@ -63,7 +62,6 @@ export default function Pipeline() {
         <FilterSelect label="Competitor" value={competitorFilter} onChange={setCompetitorFilter} options={[['all', 'All'], ['yes', 'Has competitor'], ['no', 'No competitor']]} />
       </div>
 
-      {/* Kanban */}
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((stage) => {
           const stageDeals = filteredDeals
@@ -97,7 +95,7 @@ export default function Pipeline() {
   );
 }
 
-function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
+const KanbanCard = memo(function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
   const days = deal.days_since_contact;
   const daysColor = days === null ? 'text-muted-foreground' : days > 14 ? 'text-destructive' : days > 7 ? 'text-risk-medium' : 'text-risk-low';
   const priorityColor = deal.priority?.toLowerCase() === 'high' ? 'bg-destructive'
@@ -130,7 +128,7 @@ function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
       </p>
     </div>
   );
-}
+});
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[][] }) {
   return (
