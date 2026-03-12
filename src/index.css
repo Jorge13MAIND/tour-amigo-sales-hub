@@ -93,3 +93,27 @@
     font-family: 'JetBrains Mono', monospace;
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12px;
+  }
+  [data-sidebar],
+  header,
+  .no-print,
+  button[title="Refresh data"] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .rounded-xl {
+    break-inside: avoid;
+  }
+  @page {
+    margin: 1cm;
+  }
+}
