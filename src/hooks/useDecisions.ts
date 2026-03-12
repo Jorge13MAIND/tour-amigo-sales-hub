@@ -33,3 +33,18 @@ export function useDealDecisions(dealId: number | null) {
     enabled: !!dealId,
   });
 }
+
+export function usePendingDecisionCount() {
+  return useQuery({
+    queryKey: ['decisions-pending-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('decisions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending_review');
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 5 * 60 * 1000,
+  });
+}
