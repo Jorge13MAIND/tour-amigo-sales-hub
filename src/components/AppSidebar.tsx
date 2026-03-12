@@ -1,6 +1,9 @@
 import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
+import { useAtRiskCount } from '@/hooks/useDeals';
+import { usePendingDecisionCount } from '@/hooks/useDecisions';
+import { useAppContext } from '@/contexts/AppContext';
 import { useState, useEffect } from 'react';
 import {
   Sidebar,
@@ -16,7 +19,10 @@ import {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  const { selectedPipeline } = useAppContext();
   const { data: metrics } = useDailyMetrics();
+  const { data: atRiskCount } = useAtRiskCount(selectedPipeline);
+  const { data: pendingDecisions } = usePendingDecisionCount();
   const showMetrics = (metrics?.length || 0) >= 7;
   const [isDark, setIsDark] = useState(false);
 
@@ -25,10 +31,10 @@ export function AppSidebar() {
   }, [isDark]);
 
   const items = [
-    { title: 'Dashboard', url: '/', icon: LayoutGrid },
-    { title: 'Pipeline', url: '/pipeline', icon: Columns3 },
-    { title: 'Decisions', url: '/decisions', icon: ClipboardCheck },
-    ...(showMetrics ? [{ title: 'Metrics', url: '/metrics', icon: TrendingUp }] : []),
+    { title: 'Dashboard', url: '/', icon: LayoutGrid, badge: 0 },
+    { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
+    { title: 'Decisions', url: '/decisions', icon: ClipboardCheck, badge: pendingDecisions || 0, badgeColor: 'bg-risk-medium text-white' },
+    ...(showMetrics ? [{ title: 'Metrics', url: '/metrics', icon: TrendingUp, badge: 0, badgeColor: '' }] : []),
   ];
 
   return (
@@ -60,11 +66,16 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === '/'}
-                      className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-lg px-3 py-2.5 transition-all"
+                      className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-lg px-3 py-2.5 transition-all flex items-center gap-2"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span className="text-sm">{item.title}</span>}
+                      {!collapsed && <span className="text-sm flex-1">{item.title}</span>}
+                      {!collapsed && item.badge > 0 && (
+                        <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center ${item.badgeColor}`}>
+                          {item.badge}
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
