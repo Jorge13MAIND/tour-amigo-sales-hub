@@ -10,10 +10,10 @@ export function RiskBadge({ score, className }: RiskBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-xs font-mono font-medium',
-        level === 'low' && 'bg-risk-low/20 text-risk-low',
-        level === 'medium' && 'bg-risk-medium/20 text-risk-medium',
-        level === 'high' && 'bg-risk-high/20 text-risk-high',
+        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-mono font-semibold',
+        level === 'low' && 'bg-risk-low/15 text-risk-low',
+        level === 'medium' && 'bg-risk-medium/15 text-risk-medium',
+        level === 'high' && 'bg-risk-high/15 text-risk-high',
         className,
       )}
     >

@@ -15,27 +15,28 @@ export function HeaderBar() {
   const isStale = syncTime ? (Date.now() - new Date(syncTime).getTime()) > 2 * 60 * 60 * 1000 : false;
 
   return (
-    <header className="h-12 flex items-center justify-between border-b border-border px-4 bg-background">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="text-muted-foreground" />
+    <header className="h-14 flex items-center justify-between border-b border-border px-5 bg-card shadow-sm">
+      <div className="flex items-center gap-3">
+        <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+        <div className="w-px h-6 bg-border" />
         <Select value={selectedPipeline} onValueChange={(v) => setSelectedPipeline(v as PipelineKey)}>
-          <SelectTrigger className="w-[140px] h-8 text-xs border-border">
+          <SelectTrigger className="w-[140px] h-9 text-sm border-border bg-background font-medium">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {Object.entries(PIPELINE_LABELS).map(([key, label]) => (
-              <SelectItem key={key} value={key} className="text-xs">{label}</SelectItem>
+              <SelectItem key={key} value={key} className="text-sm">{label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className={`flex items-center gap-1.5 text-xs ${isStale ? 'text-destructive' : 'text-muted-foreground'}`}>
-          {isStale && <AlertTriangle className="h-3 w-3" />}
-          <span>Last synced: {syncTime ? relativeTime(syncTime) : 'N/A'}</span>
+        <div className={`flex items-center gap-1.5 text-xs font-medium ${isStale ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {isStale && <AlertTriangle className="h-3.5 w-3.5" />}
+          <span>Synced {syncTime ? relativeTime(syncTime) : '—'}</span>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={refreshAll}>
+        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={refreshAll} title="Refresh data">
           <RefreshCw className="h-3.5 w-3.5" />
         </Button>
       </div>

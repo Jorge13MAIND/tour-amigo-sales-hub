@@ -5,15 +5,19 @@ interface MetricCardProps {
   label: string;
   value: ReactNode;
   subtitle?: string;
+  icon?: ReactNode;
   className?: string;
 }
 
-export function MetricCard({ label, value, subtitle, className }: MetricCardProps) {
+export function MetricCard({ label, value, subtitle, icon, className }: MetricCardProps) {
   return (
-    <div className={cn('rounded-lg border bg-card p-4', className)}>
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="mt-1 text-2xl font-semibold font-mono text-foreground">{value}</p>
-      {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+    <div className={cn('rounded-xl border bg-card p-5 shadow-sm hover:shadow-md transition-shadow', className)}>
+      <div className="flex items-start justify-between">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+        {icon && <div className="text-muted-foreground">{icon}</div>}
+      </div>
+      <p className="mt-2 text-3xl font-bold font-mono text-card-foreground tracking-tight">{value}</p>
+      {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
     </div>
   );
 }

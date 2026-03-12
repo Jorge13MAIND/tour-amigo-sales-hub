@@ -29,52 +29,51 @@ export default function Pipeline() {
     });
   }, [deals, priorityFilter, amountFilter, competitorFilter]);
 
-  // Determine columns from data
   const columns = useMemo(() => {
     const stageSet = new Set<string>();
     (deals || []).forEach((d) => stageSet.add(d.deal_stage_label));
-    // Use known order for default pipeline, else use whatever is in data
     const ordered = KNOWN_STAGES.filter((s) => stageSet.has(s));
     stageSet.forEach((s) => { if (!ordered.includes(s)) ordered.push(s); });
-    // If no data yet, show known stages
     return ordered.length > 0 ? ordered : KNOWN_STAGES;
   }, [deals]);
 
   if (isLoading) {
     return (
-      <div className="flex gap-3">
-        {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="flex-1 h-96 rounded-lg" />)}
+      <div className="flex gap-4">
+        {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="flex-1 h-96 rounded-xl" />)}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {/* Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-card border shadow-sm">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Filters</span>
+        <div className="w-px h-5 bg-border" />
         <FilterSelect label="Priority" value={priorityFilter} onChange={setPriorityFilter} options={[['all', 'All'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']]} />
-        <FilterSelect label="Has Amount" value={amountFilter} onChange={setAmountFilter} options={[['all', 'All'], ['yes', 'Yes'], ['no', 'No']]} />
-        <FilterSelect label="Has Competitor" value={competitorFilter} onChange={setCompetitorFilter} options={[['all', 'All'], ['yes', 'Yes'], ['no', 'No']]} />
+        <FilterSelect label="Amount" value={amountFilter} onChange={setAmountFilter} options={[['all', 'All'], ['yes', 'Has amount'], ['no', 'No amount']]} />
+        <FilterSelect label="Competitor" value={competitorFilter} onChange={setCompetitorFilter} options={[['all', 'All'], ['yes', 'Has competitor'], ['no', 'No competitor']]} />
       </div>
 
       {/* Kanban */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((stage) => {
           const stageDeals = filteredDeals
             .filter((d) => d.deal_stage_label === stage)
             .sort((a, b) => b.risk_score - a.risk_score);
-          const color = STAGE_COLORS[stage] || '#666';
+          const color = STAGE_COLORS[stage] || '#888';
 
           return (
-            <div key={stage} className="flex-1 min-w-[220px] max-w-[280px]">
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-xs font-medium text-foreground">{stage}</span>
-                <span className="text-xs text-muted-foreground font-mono">{stageDeals.length}</span>
+            <div key={stage} className="flex-1 min-w-[240px] max-w-[300px]">
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-sm font-semibold text-foreground">{stage}</span>
+                <span className="text-xs text-muted-foreground font-mono bg-muted rounded-full px-2 py-0.5">{stageDeals.length}</span>
               </div>
-              <div className="space-y-2 min-h-[200px]">
+              <div className="space-y-2.5 min-h-[200px]">
                 {stageDeals.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground bg-card/50">
                     No deals
                   </div>
                 ) : (
@@ -98,20 +97,23 @@ function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
     : 'bg-muted-foreground';
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3 cursor-pointer hover:border-primary/40 transition-colors" onClick={onClick}>
+    <div
+      className="rounded-xl border border-border bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all shadow-sm"
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-foreground leading-tight">{deal.deal_name}</p>
-        <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${priorityColor}`} />
+        <p className="text-sm font-semibold text-card-foreground leading-tight">{deal.deal_name}</p>
+        <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${priorityColor}`} />
       </div>
-      <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-2 mt-3">
         {deal.amount !== null ? (
-          <span className="text-xs font-mono text-foreground">{formatCurrency(deal.amount)}</span>
+          <span className="text-sm font-mono font-semibold text-card-foreground">{formatCurrency(deal.amount)}</span>
         ) : (
-          <span className="text-xs font-mono text-destructive/60">TBD</span>
+          <span className="text-sm font-mono text-muted-foreground italic">TBD</span>
         )}
         <RiskBadge score={deal.risk_score} />
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1.5">
+      <p className="text-[11px] text-muted-foreground mt-2 font-medium">
         {days !== null ? `${days}d since contact` : 'No contact date'}
       </p>
     </div>
@@ -120,10 +122,10 @@ function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[][] }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-xs text-muted-foreground">{label}:</span>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground font-medium">{label}:</span>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-7 w-[90px] text-xs border-border">
+        <SelectTrigger className="h-8 w-[120px] text-xs border-border bg-background rounded-lg">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
