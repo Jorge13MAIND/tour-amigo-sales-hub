@@ -6,8 +6,10 @@ import { useDealDecisions } from '@/hooks/useDecisions';
 import { RiskBadge } from './RiskBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
-import { formatCurrency, formatDate, daysSince, relativeTime } from '@/lib/format';
-import { ExternalLink } from 'lucide-react';
+import { DataQualityBar } from './DataQualityBar';
+import { DaysToCloseBadge } from './DaysToCloseBadge';
+import { formatCurrency, formatDate, relativeTime } from '@/lib/format';
+import { ExternalLink, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function DealDetailPanel() {
@@ -26,18 +28,40 @@ export function DealDetailPanel() {
                 <SheetTitle className="text-lg font-bold text-card-foreground flex-1 leading-snug">{deal.deal_name}</SheetTitle>
                 <RiskBadge score={deal.risk_score} />
               </div>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="text-xs font-semibold rounded-full px-2.5 py-1 bg-primary/15 text-primary">{deal.deal_stage_label}</span>
                 <PriorityBadge priority={deal.priority} />
+                {deal.days_in_stage !== null && (
+                  <span className="text-xs text-muted-foreground font-mono">{deal.days_in_stage}d in stage</span>
+                )}
+                {deal.competitor && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2.5 py-1 bg-primary/10 text-primary">
+                    <Shield className="h-3 w-3" />
+                    {deal.competitor}
+                  </span>
+                )}
               </div>
             </SheetHeader>
 
             <div className="space-y-5 pt-5">
-              {/* Financials */}
-              <Section title="Details">
+              {/* Data Quality */}
+              {deal.data_quality_score !== null && (
+                <Section title="Data Quality">
+                  <DataQualityBar deal={deal} />
+                </Section>
+              )}
+
+              {/* Details */}
+              <Section title="Deal Info">
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Amount" value={deal.amount !== null ? formatCurrency(deal.amount) : 'TBD'} mono />
-                  <Field label="Close Date" value={formatDate(deal.close_date)} />
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Close Date</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-medium text-card-foreground">{formatDate(deal.close_date)}</span>
+                      <DaysToCloseBadge days={deal.days_to_close} />
+                    </div>
+                  </div>
                   <Field label="Users" value={deal.number_of_users || 'N/A'} />
                   <Field label="Product Tier" value={deal.product_tier || 'N/A'} />
                 </div>
@@ -48,17 +72,23 @@ export function DealDetailPanel() {
                 <div className="space-y-3">
                   <Field label="Next Step" value={deal.next_step || 'N/A'} full />
                   <Field label="Roadblocks" value={deal.roadblocks || 'N/A'} full />
-                  <Field label="Competitor" value={deal.competitor || 'N/A'} full />
                 </div>
               </Section>
 
               {/* Activity */}
               <Section title="Activity">
                 <div className="grid grid-cols-2 gap-4">
-                  <Field
-                    label="Last Contacted"
-                    value={deal.last_contacted ? `${formatDate(deal.last_contacted)} (${daysSince(deal.last_contacted)}d ago)` : 'N/A'}
-                  />
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Last Contacted</p>
+                    <p className="text-sm mt-0.5 font-medium text-card-foreground">
+                      {deal.last_contacted ? formatDate(deal.last_contacted) : 'N/A'}
+                    </p>
+                    {deal.days_since_contact !== null && (
+                      <p className={`text-xs font-mono mt-0.5 ${deal.days_since_contact > 14 ? 'text-destructive' : deal.days_since_contact > 7 ? 'text-risk-medium' : 'text-risk-low'}`}>
+                        {deal.days_since_contact}d ago
+                      </p>
+                    )}
+                  </div>
                   <Field label="Last Sync" value={relativeTime(deal.synced_at)} />
                 </div>
               </Section>
@@ -73,7 +103,7 @@ export function DealDetailPanel() {
 
               {/* Tasks */}
               {tasks && tasks.length > 0 && (
-                <Section title="Tasks">
+                <Section title="Related Tasks">
                   <div className="space-y-2">
                     {tasks.map((t) => (
                       <div key={t.id} className="flex items-center gap-2 text-sm py-1.5 border-b border-border last:border-0">
@@ -88,7 +118,7 @@ export function DealDetailPanel() {
 
               {/* Decisions */}
               {decisions && decisions.length > 0 && (
-                <Section title="Decisions">
+                <Section title="Decision History">
                   <div className="space-y-3">
                     {decisions.map((d) => (
                       <div key={d.id} className="text-sm border-b border-border pb-3 last:border-0">

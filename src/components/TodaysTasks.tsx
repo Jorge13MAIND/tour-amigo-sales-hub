@@ -1,7 +1,7 @@
 import type { Task } from '@/lib/types';
 import { PriorityBadge } from './PriorityBadge';
 import { useAppContext } from '@/contexts/AppContext';
-import { CheckCircle2 } from 'lucide-react';
+import { Coffee } from 'lucide-react';
 
 interface TodaysTasksProps {
   tasks: Task[];
@@ -17,9 +17,12 @@ export function TodaysTasks({ tasks }: TodaysTasksProps) {
         {tasks.length > 0 && <span className="text-xs font-mono font-semibold bg-primary/10 text-primary rounded-full px-2 py-0.5">{tasks.length}</span>}
       </div>
       {tasks.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
-          <CheckCircle2 className="h-8 w-8 text-risk-low opacity-60" />
-          <p className="text-sm">All clear for today</p>
+        <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
+          <Coffee className="h-8 w-8 opacity-40" />
+          <div className="text-center">
+            <p className="text-sm font-medium">No tasks for today</p>
+            <p className="text-xs mt-1 max-w-[200px]">Morning routine generates tasks. Run it in Claude to populate this section.</p>
+          </div>
         </div>
       ) : (
         <div className="space-y-1">

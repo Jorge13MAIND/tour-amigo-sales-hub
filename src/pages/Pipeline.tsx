@@ -2,13 +2,20 @@ import { useMemo, useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { useDeals } from '@/hooks/useDeals';
 import { RiskBadge } from '@/components/RiskBadge';
-import { formatCurrency, daysSince } from '@/lib/format';
+import { formatCurrency } from '@/lib/format';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Deal } from '@/lib/types';
 import { STAGE_COLORS } from '@/lib/types';
+import { Shield } from 'lucide-react';
 
 const KNOWN_STAGES = ['Demo Scheduled', 'Additional Demo', 'Demo Completed', 'Proposal Sent', 'Negotiation'];
+
+const STATUS_BORDER: Record<string, string> = {
+  on_track: 'border-l-risk-low',
+  needs_attention: 'border-l-risk-medium',
+  at_risk: 'border-l-destructive',
+};
 
 export default function Pipeline() {
   const { selectedPipeline, setSelectedDealId } = useAppContext();
@@ -21,10 +28,10 @@ export default function Pipeline() {
     if (!deals) return [];
     return deals.filter((d) => {
       if (priorityFilter !== 'all' && d.priority?.toLowerCase() !== priorityFilter) return false;
-      if (amountFilter === 'yes' && d.amount === null) return false;
-      if (amountFilter === 'no' && d.amount !== null) return false;
-      if (competitorFilter === 'yes' && !d.competitor) return false;
-      if (competitorFilter === 'no' && d.competitor) return false;
+      if (amountFilter === 'yes' && !d.has_amount) return false;
+      if (amountFilter === 'no' && d.has_amount) return false;
+      if (competitorFilter === 'yes' && !d.has_competitor) return false;
+      if (competitorFilter === 'no' && d.has_competitor) return false;
       return true;
     });
   }, [deals, priorityFilter, amountFilter, competitorFilter]);
@@ -91,19 +98,24 @@ export default function Pipeline() {
 }
 
 function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
-  const days = daysSince(deal.last_contacted);
+  const days = deal.days_since_contact;
+  const daysColor = days === null ? 'text-muted-foreground' : days > 14 ? 'text-destructive' : days > 7 ? 'text-risk-medium' : 'text-risk-low';
   const priorityColor = deal.priority?.toLowerCase() === 'high' ? 'bg-destructive'
     : deal.priority?.toLowerCase() === 'medium' ? 'bg-brand-yellow'
     : 'bg-muted-foreground';
+  const statusBorder = STATUS_BORDER[deal.status] || '';
 
   return (
     <div
-      className="rounded-xl border border-border bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all shadow-sm"
+      className={`rounded-xl border border-border bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all shadow-sm border-l-[3px] ${statusBorder}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-card-foreground leading-tight">{deal.deal_name}</p>
-        <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${priorityColor}`} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {deal.has_competitor && <Shield className="h-3 w-3 text-primary" />}
+          <div className={`w-2.5 h-2.5 rounded-full ${priorityColor}`} />
+        </div>
       </div>
       <div className="flex items-center gap-2 mt-3">
         {deal.amount !== null ? (
@@ -113,7 +125,7 @@ function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
         )}
         <RiskBadge score={deal.risk_score} />
       </div>
-      <p className="text-[11px] text-muted-foreground mt-2 font-medium">
+      <p className={`text-[11px] mt-2 font-medium ${daysColor}`}>
         {days !== null ? `${days}d since contact` : 'No contact date'}
       </p>
     </div>

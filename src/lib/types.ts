@@ -18,6 +18,14 @@ export interface Deal {
   hubspot_url: string | null;
   updated_at: string | null;
   synced_at: string | null;
+  // Computed columns
+  days_since_contact: number | null;
+  days_to_close: number | null;
+  days_in_stage: number | null;
+  data_quality_score: number | null;
+  has_amount: boolean | null;
+  has_competitor: boolean | null;
+  has_next_step: boolean | null;
 }
 
 export interface DailyMetric {
@@ -76,4 +84,11 @@ export const STAGE_COLORS: Record<string, string> = {
   'Demo Completed': '#66B7FF',
   'Proposal Sent': '#a855f7',
   'Negotiation': '#E0035D',
+};
+
+export const PRIORITY_ORDER: Record<string, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
 };

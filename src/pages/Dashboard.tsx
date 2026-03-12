@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   const allDeals = deals || [];
   const totalValue = allDeals.reduce((s, d) => s + (d.amount || 0), 0);
-  const unquantified = allDeals.filter((d) => d.amount === null).length;
+  const unquantified = allDeals.filter((d) => !d.has_amount).length;
   const needsAttention = allDeals.filter((d) => d.status === 'needs_attention' || d.status === 'at_risk').length;
   const avgRisk = allDeals.length > 0
     ? (allDeals.reduce((s, d) => s + d.risk_score, 0) / allDeals.length).toFixed(1)
