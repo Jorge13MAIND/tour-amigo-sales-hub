@@ -4,80 +4,80 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 7%;
-    --card: 0 0% 97%;
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 97%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 210 100% 70%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 93%;
-    --secondary-foreground: 0 0% 7%;
-    --muted: 0 0% 93%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 93%;
-    --accent-foreground: 0 0% 7%;
-    --destructive: 340 97% 44%;
+    /* Tour Amigo light theme — clean, professional SaaS */
+    --background: 210 40% 96%;
+    --foreground: 228 60% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 60% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 60% 15%;
+    --primary: 340 97% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 30% 92%;
+    --secondary-foreground: 228 60% 15%;
+    --muted: 210 25% 93%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 210 60% 95%;
+    --accent-foreground: 228 60% 15%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 88%;
-    --input: 0 0% 88%;
-    --ring: 210 100% 70%;
-    --radius: 0.5rem;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 340 97% 44%;
+    --radius: 0.75rem;
 
     --brand-pink: 340 97% 44%;
     --brand-yellow: 42 100% 58%;
     --brand-blue: 210 100% 70%;
     --brand-navy: 228 83% 28%;
-    --brand-surface: 0 0% 4%;
-    --brand-card: 0 0% 7%;
+    --brand-light-blue: 210 60% 95%;
 
-    --risk-low: 142 71% 45%;
-    --risk-low-foreground: 142 71% 15%;
-    --risk-medium: 42 100% 58%;
+    --risk-low: 152 60% 42%;
+    --risk-low-foreground: 152 60% 18%;
+    --risk-medium: 42 90% 50%;
     --risk-medium-foreground: 42 80% 20%;
     --risk-high: 340 97% 44%;
     --risk-high-foreground: 0 0% 100%;
 
-    --sidebar-background: 228 83% 28%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 210 100% 70%;
+    --sidebar-background: 228 83% 20%;
+    --sidebar-foreground: 210 30% 88%;
+    --sidebar-primary: 340 97% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 70% 35%;
+    --sidebar-accent: 228 70% 28%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 228 60% 22%;
-    --sidebar-ring: 210 100% 70%;
+    --sidebar-border: 228 60% 25%;
+    --sidebar-ring: 340 97% 44%;
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 93%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 93%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 93%;
-    --primary: 210 100% 70%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 93%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 93%;
-    --destructive: 340 97% 44%;
+    --background: 225 25% 8%;
+    --foreground: 210 20% 90%;
+    --card: 225 20% 12%;
+    --card-foreground: 210 20% 90%;
+    --popover: 225 20% 12%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 340 97% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 225 15% 18%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 225 15% 18%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 225 15% 18%;
+    --accent-foreground: 210 20% 90%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 210 100% 70%;
+    --border: 225 15% 20%;
+    --input: 225 15% 20%;
+    --ring: 340 97% 50%;
 
-    --sidebar-background: 228 83% 28%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 210 100% 70%;
+    --sidebar-background: 228 83% 14%;
+    --sidebar-foreground: 210 20% 80%;
+    --sidebar-primary: 340 97% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 70% 35%;
+    --sidebar-accent: 228 60% 22%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 228 60% 22%;
-    --sidebar-ring: 210 100% 70%;
+    --sidebar-border: 228 50% 18%;
+    --sidebar-ring: 340 97% 50%;
   }
 }
 
@@ -86,8 +86,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
   }
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
