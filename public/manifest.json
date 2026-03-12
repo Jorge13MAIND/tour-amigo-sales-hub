@@ -1,0 +1,16 @@
+{
+  "name": "TA Command Center",
+  "short_name": "TA Center",
+  "description": "Tour Amigo Sales Pipeline Dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D2480",
+  "theme_color": "#0D2480",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
