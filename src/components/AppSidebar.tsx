@@ -1,6 +1,5 @@
 import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useLocation } from 'react-router-dom';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
 import { useState, useEffect } from 'react';
 import {
@@ -19,7 +18,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { data: metrics } = useDailyMetrics();
   const showMetrics = (metrics?.length || 0) >= 7;
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
@@ -35,24 +34,37 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarContent className="bg-sidebar">
-        <div className="p-4 pb-2">
-          {!collapsed && <h1 className="text-sm font-semibold text-sidebar-foreground tracking-tight">Tour Amigo</h1>}
-          {!collapsed && <p className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest mt-0.5">Command Center</p>}
+        {/* Logo area */}
+        <div className="p-5 pb-6">
+          {!collapsed ? (
+            <div>
+              <h1 className="text-base font-bold tracking-tight">
+                <span className="text-sidebar-foreground">tour</span>
+                <span className="text-sidebar-primary">amigo</span>
+              </h1>
+              <p className="text-[10px] text-sidebar-foreground/50 uppercase tracking-[0.2em] mt-0.5 font-medium">Command Center</p>
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground font-bold text-sm">
+              T
+            </div>
+          )}
         </div>
+
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1 px-2">
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
                       end={item.url === '/'}
-                      className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                      className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-lg px-3 py-2.5 transition-all"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -61,13 +73,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-auto p-3">
+        <div className="mt-auto p-4">
           <button
             onClick={() => setIsDark(!isDark)}
-            className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors w-full px-2 py-1.5 rounded"
+            className="flex items-center gap-2.5 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors w-full px-3 py-2 rounded-lg hover:bg-sidebar-accent"
           >
-            {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            {!collapsed && (isDark ? 'Light mode' : 'Dark mode')}
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {!collapsed && <span>{isDark ? 'Light mode' : 'Dark mode'}</span>}
           </button>
         </div>
       </SidebarContent>
