@@ -1,9 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useDealChatMessages } from './useDealRooms';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 const EDGE_URL = 'https://vffwtlmbwiizynzxpxnv.supabase.co/functions/v1/deal-room-chat';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZnd0bG1id2lpenluenhweG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDEwNjcsImV4cCI6MjA4ODkxNzA2N30.v2oYHrN-jOqj4-_kJH3rb0E3nqU2cluRhd9QsQ6Osws';
+// Reuse the anon key from supabase client config
+const ANON_KEY = (supabase as unknown as { supabaseKey: string }).supabaseKey
+  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZnd0bG1id2lpenluenhweG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDEwNjcsImV4cCI6MjA4ODkxNzA2N30.v2oYHrN-jOqj4-_kJH3rb0E3nqU2cluRhd9QsQ6Osws';
 
 interface LocalMessage {
   role: 'user' | 'assistant';
@@ -18,10 +21,16 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use ref to avoid stale closure in sendMessage
+  const messagesRef = useRef<{ role: string; content: string }[]>([]);
+
   const allMessages = [
     ...(dbMessages || []).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content, created_at: m.created_at })),
     ...localMessages,
   ];
+
+  // Keep ref in sync
+  messagesRef.current = allMessages.map((m) => ({ role: m.role, content: m.content }));
 
   const sendMessage = useCallback(async (message: string) => {
     setError(null);
@@ -30,8 +39,8 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
     setIsLoading(true);
 
     try {
-      const history = allMessages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
-      history.push({ role: 'user', content: message });
+      // Use ref for stable history snapshot
+      const history = [...messagesRef.current.slice(-10), { role: 'user', content: message }];
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
@@ -46,7 +55,7 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
           message,
           deal_id: scope === 'deal' ? dealId : null,
           scope,
-          history: history.slice(0, -1),
+          history: history.slice(0, -1), // Exclude the current message from history
         }),
         signal: controller.signal,
       });
@@ -61,7 +70,6 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
         { role: 'assistant', content: reply, created_at: new Date().toISOString() },
       ]);
 
-      // Invalidate DB messages to pick up persisted messages on next scope change
       queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
     } catch (err: unknown) {
       const msg = err instanceof Error && err.name === 'AbortError'
@@ -75,7 +83,7 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
     } finally {
       setIsLoading(false);
     }
-  }, [dealId, scope, allMessages, queryClient]);
+  }, [dealId, scope, queryClient]);
 
   const clearLocal = useCallback(() => setLocalMessages([]), []);
 
