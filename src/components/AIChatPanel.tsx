@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAIChat } from '@/hooks/useAIChat';
-import { useLocation, useParams } from 'react-router-dom';
-import { useDealRoom } from '@/hooks/useDealRooms';
+import { useLocation } from 'react-router-dom';
+import { useDealRooms } from '@/hooks/useDealRooms';
 import { X, Send, Sparkles, Bot, User } from 'lucide-react';
 
 const DEAL_PROMPTS = [
@@ -25,11 +25,16 @@ interface Props {
 
 export function AIChatPanel({ isOpen, onClose }: Props) {
   const location = useLocation();
-  const params = useParams<{ id: string }>();
-  const isDealRoom = location.pathname.startsWith('/deal-rooms/') && !!params.id;
 
-  const { data: room } = useDealRoom(isDealRoom ? params.id : undefined);
-  const dealId = room?.deal_id ?? null;
+  // Extract deal room ID from URL since useParams won't work outside route context
+  const dealRoomMatch = location.pathname.match(/^\/deal-rooms\/([^/]+)$/);
+  const dealRoomId = dealRoomMatch?.[1] || null;
+  const isDealRoom = !!dealRoomId;
+
+  // Find deal_id from rooms data when viewing a deal room
+  const { data: rooms } = useDealRooms();
+  const currentRoom = isDealRoom ? rooms?.find((r) => r.id === dealRoomId) : null;
+  const dealId = currentRoom?.deal_id ?? null;
 
   const [scope, setScope] = useState<'deal' | 'global'>(isDealRoom ? 'deal' : 'global');
   const [input, setInput] = useState('');
@@ -84,7 +89,7 @@ export function AIChatPanel({ isOpen, onClose }: Props) {
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          {scope === 'deal' && room ? `Deal: ${room.deal_name}` : 'Global'}
+          {scope === 'deal' && currentRoom ? `Deal: ${currentRoom.deal_name}` : 'Global'}
         </p>
       </div>
 

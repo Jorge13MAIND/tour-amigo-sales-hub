@@ -11,6 +11,13 @@ type RoomTypeFilter = 'all' | 'enterprise' | 'mid_market' | 'standard';
 type StatusFilter = 'all' | 'active' | 'won' | 'lost' | 'paused';
 type SortKey = 'close_date' | 'contract_value' | 'probability';
 
+interface RoomMeta {
+  stakeholders: Record<number, number>;
+  feedCounts: Record<number, number>;
+  docCounts: Record<number, number>;
+  lastFeed: Record<number, string>;
+}
+
 export default function DealRoomList() {
   const [typeFilter, setTypeFilter] = useState<RoomTypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -20,21 +27,30 @@ export default function DealRoomList() {
   const { data: rooms, isLoading } = useDealRooms();
   const { data: dealsWithoutRooms } = useDealsWithoutRooms();
 
-  // Get counts per room
-  const { data: roomMeta } = useQuery({
+  // Get counts per room — returns serializable data, not functions
+  const { data: roomMeta } = useQuery<RoomMeta>({
     queryKey: ['deal-room-meta'],
     queryFn: async () => {
-      const [stakeholders, feed, docs] = await Promise.all([
+      const [stk, feed, docs] = await Promise.all([
         supabase.from('deal_stakeholders').select('deal_id'),
         supabase.from('deal_room_feed').select('deal_id, created_at').gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
         supabase.from('deal_documents').select('deal_id'),
       ]);
-      const count = (arr: { deal_id: number }[] | null, dealId: number) => (arr || []).filter((r) => r.deal_id === dealId).length;
-      const lastFeed = (arr: { deal_id: number; created_at: string }[] | null, dealId: number) => {
-        const items = (arr || []).filter((r) => r.deal_id === dealId);
-        return items.length > 0 ? items.sort((a, b) => b.created_at.localeCompare(a.created_at))[0].created_at : null;
-      };
-      return { stakeholders: stakeholders.data, feed: feed.data, docs: docs.data, count, lastFeed };
+
+      const stakeholders: Record<number, number> = {};
+      (stk.data || []).forEach((r) => { stakeholders[r.deal_id] = (stakeholders[r.deal_id] || 0) + 1; });
+
+      const feedCounts: Record<number, number> = {};
+      const lastFeed: Record<number, string> = {};
+      (feed.data || []).forEach((r) => {
+        feedCounts[r.deal_id] = (feedCounts[r.deal_id] || 0) + 1;
+        if (!lastFeed[r.deal_id] || r.created_at > lastFeed[r.deal_id]) lastFeed[r.deal_id] = r.created_at;
+      });
+
+      const docCounts: Record<number, number> = {};
+      (docs.data || []).forEach((r) => { docCounts[r.deal_id] = (docCounts[r.deal_id] || 0) + 1; });
+
+      return { stakeholders, feedCounts, docCounts, lastFeed };
     },
   });
 
@@ -109,10 +125,10 @@ export default function DealRoomList() {
             <DealRoomCard
               key={room.id}
               room={room}
-              stakeholderCount={roomMeta?.count(roomMeta.stakeholders, room.deal_id) || 0}
-              feedCount={roomMeta?.count(roomMeta.feed as { deal_id: number }[], room.deal_id) || 0}
-              docCount={roomMeta?.count(roomMeta.docs, room.deal_id) || 0}
-              lastFeedAt={roomMeta?.lastFeed(roomMeta.feed as { deal_id: number; created_at: string }[], room.deal_id) || null}
+              stakeholderCount={roomMeta?.stakeholders[room.deal_id] || 0}
+              feedCount={roomMeta?.feedCounts[room.deal_id] || 0}
+              docCount={roomMeta?.docCounts[room.deal_id] || 0}
+              lastFeedAt={roomMeta?.lastFeed[room.deal_id] || null}
             />
           ))}
         </div>
