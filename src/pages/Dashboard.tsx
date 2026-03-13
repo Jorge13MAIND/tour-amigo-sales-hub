@@ -11,6 +11,7 @@ import { AgentPulseWidget } from '@/components/widgets/AgentPulseWidget';
 import { FollowUpWidget } from '@/components/widgets/FollowUpWidget';
 import { OutreachWidget } from '@/components/widgets/OutreachWidget';
 import { AgentHealthWidget } from '@/components/widgets/AgentHealthWidget';
+import { DealRoomsWidget } from '@/components/widgets/DealRoomsWidget';
 import { formatCurrency } from '@/lib/format';
 import { computeHealthScore } from '@/lib/healthScore';
 import { Skeleton } from '@/components/ui/skeleton';
