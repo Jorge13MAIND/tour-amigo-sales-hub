@@ -1,10 +1,11 @@
-import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb } from 'lucide-react';
+import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
 import { useAtRiskCount } from '@/hooks/useDeals';
 import { usePendingDecisionCount } from '@/hooks/useDecisions';
 import { usePendingApprovalCount } from '@/hooks/useAgentActivity';
 import { useAppContext } from '@/contexts/AppContext';
+import { AIChatToggle } from './AIChatToggle';
 import { useState, useEffect } from 'react';
 import {
   Sidebar,
@@ -28,7 +29,7 @@ interface NavItem {
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { selectedPipeline } = useAppContext();
+  const { selectedPipeline, isChatOpen, setIsChatOpen } = useAppContext();
   const { data: metrics } = useDailyMetrics();
   const { data: atRiskCount } = useAtRiskCount(selectedPipeline);
   const { data: pendingDecisions } = usePendingDecisionCount();
@@ -43,6 +44,7 @@ export function AppSidebar() {
   const mainItems: NavItem[] = [
     { title: 'Dashboard', url: '/', icon: LayoutGrid, badge: 0, badgeColor: '' },
     { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
+    { title: 'Deal Rooms', url: '/deal-rooms', icon: Building2, badge: 0, badgeColor: '' },
   ];
 
   const atlasItems: NavItem[] = [
@@ -133,6 +135,9 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <div className="mt-auto p-4 space-y-3">
+          {!collapsed && (
+            <AIChatToggle onClick={() => setIsChatOpen(!isChatOpen)} isOpen={isChatOpen} />
+          )}
           <button
             onClick={() => setIsDark(!isDark)}
             className="flex items-center gap-2.5 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors w-full px-3 py-2 rounded-lg hover:bg-sidebar-accent"
@@ -143,7 +148,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="px-3 pt-2 border-t border-sidebar-border">
               <p className="text-[10px] text-sidebar-foreground/30 font-medium flex items-center gap-1.5">
-                v2.0 — Powered by Atlas
+                v3.0 — Powered by Atlas
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
