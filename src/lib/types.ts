@@ -68,6 +68,86 @@ export interface Decision {
   created_at: string;
 }
 
+export type AgentName =
+  | 'morning-brief'
+  | 'task-processor'
+  | 'weekly-report'
+  | 'calendar-prep'
+  | 'inbound-processor'
+  | 'outreach-engine'
+  | 'improvement-scan'
+  | 'deal-monitor';
+
+export type AgentResult = 'success' | 'auto_executed' | 'needs_approval' | 'failed' | 'skipped';
+
+export interface AgentActivity {
+  id: string;
+  agent_name: AgentName;
+  action_type: string;
+  deal_id: number | null;
+  deal_name: string | null;
+  description: string;
+  result: AgentResult | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export type FollowUpStepStatus = 'pending' | 'sent' | 'skipped' | 'completed';
+
+export interface FollowUpStep {
+  step_number: number;
+  action: string;
+  template: string;
+  delay_days: number;
+  status: FollowUpStepStatus;
+  sent_at: string | null;
+  variables: Record<string, string>;
+}
+
+export interface FollowUpPlan {
+  id: string;
+  deal_id: number;
+  deal_name: string;
+  plan_type: string;
+  status: 'active' | 'completed' | 'paused' | 'cancelled';
+  steps: FollowUpStep[];
+  trigger_reason: string | null;
+  playbook_used: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Playbook {
+  id: string;
+  name: string;
+  trigger_condition: Record<string, unknown>;
+  steps: Record<string, unknown>[];
+  autonomy_level: string;
+  active: boolean;
+  description: string | null;
+  success_rate: number | null;
+  times_used: number;
+  created_at: string;
+}
+
+export const AGENT_CONFIG: Record<AgentName, { icon: string; color: string; label: string }> = {
+  'morning-brief': { icon: 'Sun', color: 'text-amber-500', label: 'Morning Brief' },
+  'task-processor': { icon: 'Cog', color: 'text-blue-500', label: 'Task Processor' },
+  'calendar-prep': { icon: 'ClipboardList', color: 'text-purple-500', label: 'Calendar Prep' },
+  'inbound-processor': { icon: 'Mail', color: 'text-emerald-500', label: 'Inbound Processor' },
+  'outreach-engine': { icon: 'Target', color: 'text-orange-500', label: 'Outreach Engine' },
+  'improvement-scan': { icon: 'BarChart', color: 'text-teal-500', label: 'Improvement Scan' },
+  'deal-monitor': { icon: 'Search', color: 'text-slate-500', label: 'Deal Monitor' },
+  'weekly-report': { icon: 'TrendingUp', color: 'text-indigo-500', label: 'Weekly Report' },
+};
+
+/** Agents that run weekly — use longer staleness threshold */
+export const WEEKLY_AGENTS: AgentName[] = ['improvement-scan', 'weekly-report'];
+export const WEEKLY_AGENT_STALE_HOURS = 192; // 8 days
+export const DAILY_AGENT_STALE_HOURS = 25;
+export const DEAD_AGENT_HOURS = 72;
+
 export type PipelineKey = 'default' | '96925713' | '781108352';
 
 export const PIPELINE_LABELS: Record<PipelineKey, string> = {
