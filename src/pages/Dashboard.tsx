@@ -11,6 +11,7 @@ import { AgentPulseWidget } from '@/components/widgets/AgentPulseWidget';
 import { FollowUpWidget } from '@/components/widgets/FollowUpWidget';
 import { OutreachWidget } from '@/components/widgets/OutreachWidget';
 import { AgentHealthWidget } from '@/components/widgets/AgentHealthWidget';
+import { DealRoomsWidget } from '@/components/widgets/DealRoomsWidget';
 import { formatCurrency } from '@/lib/format';
 import { computeHealthScore } from '@/lib/healthScore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,11 +67,12 @@ export default function Dashboard() {
       <PipelineFunnel deals={allDeals} />
 
       {/* ATLAS Engine Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <AgentPulseWidget />
         <FollowUpWidget />
         <OutreachWidget />
         <AgentHealthWidget />
+        <DealRoomsWidget />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

@@ -3,8 +3,12 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { HeaderBar } from './HeaderBar';
 import { DealDetailPanel } from './DealDetailPanel';
+import { AIChatPanel } from './AIChatPanel';
+import { useAppContext } from '@/contexts/AppContext';
 
 export function AppLayout() {
+  const { isChatOpen, setIsChatOpen } = useAppContext();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -17,6 +21,7 @@ export function AppLayout() {
         </div>
       </div>
       <DealDetailPanel />
+      <AIChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </SidebarProvider>
   );
 }

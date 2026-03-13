@@ -172,3 +172,118 @@ export const PRIORITY_ORDER: Record<string, number> = {
   medium: 2,
   low: 3,
 };
+
+// ── v3 Deal Rooms ──
+
+export interface ClosePlanStep {
+  day: string;
+  date: string;
+  focus: string;
+  actions: string;
+  owner: string;
+  deliverable: string;
+  risk: string;
+  status: string;
+}
+
+export interface DealRisk {
+  risk: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  mitigation: string;
+  status: 'open' | 'mitigated' | 'escalated';
+}
+
+export interface CompetitiveIntel {
+  competitors: string;
+  differentiators: string;
+  status_quo_risk: string;
+}
+
+export interface DealRoom {
+  id: string;
+  deal_id: number;
+  deal_name: string;
+  room_type: 'enterprise' | 'mid_market' | 'standard';
+  status: 'active' | 'won' | 'lost' | 'paused';
+  close_plan: ClosePlanStep[];
+  risks: DealRisk[];
+  competitive_intel: CompetitiveIntel | null;
+  key_metrics: Record<string, unknown> | null;
+  target_close_date: string | null;
+  close_probability: number | null;
+  total_contract_value: number | null;
+  pricing_details: Record<string, unknown> | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deals?: Deal;
+}
+
+export interface DealStakeholder {
+  id: string;
+  deal_id: number;
+  name: string;
+  role: string | null;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  stakeholder_type: 'champion' | 'economic_buyer' | 'technical_buyer' | 'blocker' | 'influencer' | 'user' | 'executive';
+  engagement_score: number;
+  last_interaction: string | null;
+  interaction_count: number;
+  sentiment: 'positive' | 'neutral' | 'negative' | 'unknown';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FeedSource = 'email' | 'calendar' | 'slack' | 'drive' | 'hubspot' | 'agent' | 'transcript' | 'manual';
+
+export interface DealRoomFeedItem {
+  id: string;
+  deal_id: number;
+  source: FeedSource;
+  event_type: string;
+  title: string;
+  summary: string | null;
+  raw_data: Record<string, unknown> | null;
+  stakeholder_name: string | null;
+  stakeholder_email: string | null;
+  sentiment: 'positive' | 'neutral' | 'negative' | 'unknown' | null;
+  action_required: boolean;
+  action_description: string | null;
+  external_url: string | null;
+  external_id: string | null;
+  created_at: string;
+}
+
+export type DocType = 'transcript' | 'proposal' | 'contract' | 'presentation' | 'sow' | 'email_thread' | 'drive_file' | 'meeting_notes' | 'other';
+
+export interface DealDocument {
+  id: string;
+  deal_id: number;
+  doc_type: DocType;
+  title: string;
+  source: string;
+  external_url: string | null;
+  external_id: string | null;
+  content_summary: string | null;
+  key_points: string[] | null;
+  stakeholders_mentioned: string[] | null;
+  action_items: string[] | null;
+  processed: boolean;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  deal_id: number | null;
+  scope: 'deal' | 'global';
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  context_used: Record<string, unknown> | null;
+  actions_triggered: Record<string, unknown> | null;
+  model: string | null;
+  tokens_used: number | null;
+  created_at: string;
+}

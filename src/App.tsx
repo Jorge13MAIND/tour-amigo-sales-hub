@@ -7,6 +7,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import { AppLayout } from "@/components/AppLayout";
 import { useRealtimeDeals } from "@/hooks/useRealtimeDeals";
 import { useRealtimeAtlas } from "@/hooks/useRealtimeAtlas";
+import { useRealtimeDealRooms } from "@/hooks/useRealtimeDealRooms";
 import Dashboard from "./pages/Dashboard";
 import Pipeline from "./pages/Pipeline";
 import Decisions from "./pages/Decisions";
@@ -19,6 +20,8 @@ const AgentFeed = lazy(() => import("./pages/AgentFeed"));
 const FollowUps = lazy(() => import("./pages/FollowUps"));
 const Approvals = lazy(() => import("./pages/Approvals"));
 const Improvements = lazy(() => import("./pages/Improvements"));
+const DealRoomList = lazy(() => import("./pages/DealRoomList"));
+const DealRoom = lazy(() => import("./pages/DealRoom"));
 
 const queryClient = new QueryClient();
 
@@ -27,6 +30,7 @@ const LazyFallback = () => <Skeleton className="h-96 rounded-xl" />;
 function AppRoutes() {
   useRealtimeDeals();
   useRealtimeAtlas();
+  useRealtimeDealRooms();
   return (
     <Routes>
       <Route element={<AppLayout />}>
@@ -38,6 +42,8 @@ function AppRoutes() {
         <Route path="/follow-ups" element={<Suspense fallback={<LazyFallback />}><FollowUps /></Suspense>} />
         <Route path="/approvals" element={<Suspense fallback={<LazyFallback />}><Approvals /></Suspense>} />
         <Route path="/improvements" element={<Suspense fallback={<LazyFallback />}><Improvements /></Suspense>} />
+        <Route path="/deal-rooms" element={<Suspense fallback={<LazyFallback />}><DealRoomList /></Suspense>} />
+        <Route path="/deal-rooms/:id" element={<Suspense fallback={<LazyFallback />}><DealRoom /></Suspense>} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
