@@ -7,6 +7,10 @@ import { DealsAttentionTable } from '@/components/DealsAttentionTable';
 import { TodaysTasks } from '@/components/TodaysTasks';
 import { UpcomingTasks } from '@/components/UpcomingTasks';
 import { StaleDealBanner } from '@/components/StaleDealBanner';
+import { AgentPulseWidget } from '@/components/widgets/AgentPulseWidget';
+import { FollowUpWidget } from '@/components/widgets/FollowUpWidget';
+import { OutreachWidget } from '@/components/widgets/OutreachWidget';
+import { AgentHealthWidget } from '@/components/widgets/AgentHealthWidget';
 import { formatCurrency } from '@/lib/format';
 import { computeHealthScore } from '@/lib/healthScore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -60,6 +64,14 @@ export default function Dashboard() {
       </div>
 
       <PipelineFunnel deals={allDeals} />
+
+      {/* ATLAS Engine Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <AgentPulseWidget />
+        <FollowUpWidget />
+        <OutreachWidget />
+        <AgentHealthWidget />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
