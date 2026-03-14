@@ -3,11 +3,6 @@ import { useDealChatMessages } from './useDealRooms';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
-const EDGE_URL = 'https://vffwtlmbwiizynzxpxnv.supabase.co/functions/v1/deal-room-chat';
-// Reuse the anon key from supabase client config
-const ANON_KEY = (supabase as unknown as { supabaseKey: string }).supabaseKey
-  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZnd0bG1id2lpenluenhweG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDEwNjcsImV4cCI6MjA4ODkxNzA2N30.v2oYHrN-jOqj4-_kJH3rb0E3nqU2cluRhd9QsQ6Osws';
-
 interface LocalMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -21,7 +16,6 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use ref to avoid stale closure in sendMessage
   const messagesRef = useRef<{ role: string; content: string }[]>([]);
 
   const allMessages = [
@@ -29,7 +23,6 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
     ...localMessages,
   ];
 
-  // Keep ref in sync
   messagesRef.current = allMessages.map((m) => ({ role: m.role, content: m.content }));
 
   const sendMessage = useCallback(async (message: string) => {
@@ -39,31 +32,19 @@ export function useAIChat(dealId: number | null, scope: 'deal' | 'global') {
     setIsLoading(true);
 
     try {
-      // Use ref for stable history snapshot
       const history = [...messagesRef.current.slice(-10), { role: 'user', content: message }];
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-
-      const res = await fetch(EDGE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ANON_KEY}`,
-        },
-        body: JSON.stringify({
+      const { data, error: fnError } = await supabase.functions.invoke('deal-room-chat', {
+        body: {
           message,
           deal_id: scope === 'deal' ? dealId : null,
           scope,
-          history: history.slice(0, -1), // Exclude the current message from history
-        }),
-        signal: controller.signal,
+          history: history.slice(0, -1),
+        },
       });
-      clearTimeout(timeout);
 
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const data = await res.json();
-      const reply = data.reply || data.response || 'No response received.';
+      if (fnError) throw new Error(fnError.message || `Error invoking chat`);
+      const reply = data?.reply || data?.response || 'No response received.';
 
       setLocalMessages((prev) => [
         ...prev,

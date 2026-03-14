@@ -1,10 +1,11 @@
-import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target } from 'lucide-react';
+import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
 import { useAtRiskCount } from '@/hooks/useDeals';
 import { usePendingDecisionCount } from '@/hooks/useDecisions';
 import { usePendingApprovalCount } from '@/hooks/useAgentActivity';
 import { useAppContext } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AIChatToggle } from './AIChatToggle';
 import { useState, useEffect } from 'react';
 import {
@@ -30,6 +31,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { selectedPipeline, isChatOpen, setIsChatOpen } = useAppContext();
+  const { user, signOut } = useAuth();
   const { data: metrics } = useDailyMetrics();
   const { data: atRiskCount } = useAtRiskCount(selectedPipeline);
   const { data: pendingDecisions } = usePendingDecisionCount();
@@ -146,13 +148,23 @@ export function AppSidebar() {
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             {!collapsed && <span>{isDark ? 'Light mode' : 'Dark mode'}</span>}
           </button>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-2.5 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors w-full px-3 py-2 rounded-lg hover:bg-sidebar-accent"
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span>Sign out</span>}
+          </button>
           {!collapsed && (
             <div className="px-3 pt-2 border-t border-sidebar-border">
+              {user?.email && (
+                <p className="text-[10px] text-sidebar-foreground/50 truncate mb-1">{user.email}</p>
+              )}
               <p className="text-[10px] text-sidebar-foreground/30 font-medium flex items-center gap-1.5">
                 v3.0 — Powered by Atlas
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-risk-low opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-risk-low" />
                 </span>
               </p>
               <a
