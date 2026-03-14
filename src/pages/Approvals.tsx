@@ -11,31 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AGENT_CONFIG } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import type { AgentActivity } from '@/lib/types';
 
-const SUPABASE_URL = 'https://vffwtlmbwiizynzxpxnv.supabase.co';
-
 async function processApproval(activityId: string, action: 'approved' | 'rejected') {
-  const { data: { session } } = await supabase.auth.getSession();
-  const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmZnd0bG1id2lpenluenhweG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDEwNjcsImV4cCI6MjA4ODkxNzA2N30.v2oYHrN-jOqj4-_kJH3rb0E3nqU2cluRhd9QsQ6Osws';
-  const token = session?.access_token || anonKey;
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/process-approval`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ activity_id: activityId, action }),
+  const { data, error } = await supabase.functions.invoke('process-approval', {
+    body: { activity_id: activityId, action },
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(err.error || `Failed with status ${res.status}`);
-  }
-
-  return res.json();
+  if (error) throw new Error(error.message || 'Edge function error');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 function ApprovalCard({
@@ -50,14 +35,14 @@ function ApprovalCard({
   const isProcessing = processing === activity.id;
 
   return (
-    <Card className="p-4 border-l-4 border-l-amber-400 hover:shadow-md transition-shadow animate-in fade-in slide-in-from-top-2 duration-300">
+    <Card className="p-4 border-l-4 border-l-risk-medium hover:shadow-md transition-shadow animate-in fade-in slide-in-from-top-2 duration-300">
       <div className="flex items-start gap-3">
         <div className="shrink-0 mt-0.5">
-          <Clock className="h-5 w-5 text-amber-500" />
+          <Clock className="h-5 w-5 text-risk-medium" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+            <span className="text-xs font-bold text-risk-medium uppercase tracking-wide">
               Pending Approval
             </span>
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">
@@ -89,7 +74,7 @@ function ApprovalCard({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 px-3 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                className="h-7 px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
                 onClick={() => onProcess(activity.id, 'rejected')}
                 disabled={isProcessing}
               >
@@ -104,7 +89,7 @@ function ApprovalCard({
               </Button>
               <Button
                 size="sm"
-                className="h-7 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="h-7 px-3 text-xs bg-risk-low hover:bg-risk-low/90 text-primary-foreground"
                 onClick={() => onProcess(activity.id, 'approved')}
                 disabled={isProcessing}
               >
@@ -128,18 +113,18 @@ function ApprovalCard({
 function HistoryCard({ activity }: { activity: AgentActivity }) {
   const isApproved = activity.result === 'approved';
   return (
-    <Card className={`p-4 border-l-4 ${isApproved ? 'border-l-emerald-400' : 'border-l-red-400'} opacity-80 hover:opacity-100 transition-opacity`}>
+    <Card className={`p-4 border-l-4 ${isApproved ? 'border-l-risk-low' : 'border-l-destructive'} opacity-80 hover:opacity-100 transition-opacity`}>
       <div className="flex items-start gap-3">
         <div className="shrink-0 mt-0.5">
           {isApproved ? (
-            <CheckCircle className="h-5 w-5 text-emerald-500" />
+            <CheckCircle className="h-5 w-5 text-risk-low" />
           ) : (
-            <X className="h-5 w-5 text-red-500" />
+            <X className="h-5 w-5 text-destructive" />
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <span className={`text-xs font-bold uppercase tracking-wide ${isApproved ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+            <span className={`text-xs font-bold uppercase tracking-wide ${isApproved ? 'text-risk-low' : 'text-destructive'}`}>
               {isApproved ? 'Approved' : 'Rejected'}
             </span>
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">
@@ -169,7 +154,6 @@ export default function Approvals() {
   const [timeFilter, setTimeFilter] = useState<'today' | '7d' | '30d' | 'all'>('all');
   const [processing, setProcessing] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const { data: pendingActivities, isLoading: pendingLoading } = useAgentActivity({
     result: 'needs_approval',
@@ -196,21 +180,15 @@ export default function Approvals() {
     setProcessing(activityId);
     try {
       await processApproval(activityId, action);
-      toast({
-        title: action === 'approved' ? 'Approved' : 'Rejected',
-        description: action === 'approved'
-          ? 'Action approved. A task has been queued for execution.'
-          : 'Action rejected and logged.',
-      });
+      toast.success(
+        action === 'approved' ? 'Approved' : 'Rejected',
+        { description: action === 'approved' ? 'Action approved. Task queued for execution.' : 'Action rejected and logged.' }
+      );
       queryClient.invalidateQueries({ queryKey: ['agent-activity'] });
       queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
       queryClient.invalidateQueries({ queryKey: ['agent-stats-today'] });
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to process approval',
-        variant: 'destructive',
-      });
+      toast.error('Error', { description: err.message || 'Failed to process approval' });
     } finally {
       setProcessing(null);
     }
@@ -218,13 +196,12 @@ export default function Approvals() {
 
   return (
     <div className="space-y-5 max-w-[900px]">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             Pending Approvals
             {pending.length > 0 && (
-              <span className="text-sm font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded-full px-2.5 py-0.5">
+              <span className="text-sm font-bold bg-risk-medium/20 text-risk-medium rounded-full px-2.5 py-0.5">
                 {pending.length}
               </span>
             )}
@@ -245,7 +222,6 @@ export default function Approvals() {
         </Select>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full max-w-[300px] grid-cols-2">
           <TabsTrigger value="pending" className="text-sm">
@@ -263,7 +239,7 @@ export default function Approvals() {
             </div>
           ) : !pending.length ? (
             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-              <CheckCircle className="h-10 w-10 text-emerald-500" />
+              <CheckCircle className="h-10 w-10 text-risk-low" />
               <p className="text-sm text-center max-w-xs">
                 All clear! No pending approvals. ATLAS agents will notify you here when they need your input.
               </p>

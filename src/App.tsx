@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/contexts/AppContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { useRealtimeDeals } from "@/hooks/useRealtimeDeals";
 import { useRealtimeAtlas } from "@/hooks/useRealtimeAtlas";
@@ -11,9 +12,12 @@ import { useRealtimeDealRooms } from "@/hooks/useRealtimeDealRooms";
 import Dashboard from "./pages/Dashboard";
 import Pipeline from "./pages/Pipeline";
 import Decisions from "./pages/Decisions";
+import Login from "./pages/Login";
+import MfaSetup from "./pages/MfaSetup";
 import NotFound from "./pages/NotFound";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 const Metrics = lazy(() => import("./pages/Metrics"));
 const AgentFeed = lazy(() => import("./pages/AgentFeed"));
@@ -27,6 +31,32 @@ const Outreach = lazy(() => import("./pages/Outreach"));
 const queryClient = new QueryClient();
 
 const LazyFallback = () => <Skeleton className="h-96 rounded-xl" />;
+
+function AuthGate() {
+  const { session, isLoading, mfaVerified, mfaRequired } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
+  if (mfaRequired && !mfaVerified) {
+    return <MfaSetup />;
+  }
+
+  return (
+    <AppProvider>
+      <AppRoutes />
+    </AppProvider>
+  );
+}
 
 function AppRoutes() {
   useRealtimeDeals();
@@ -57,11 +87,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AppProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AppProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AuthGate />
+        </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
