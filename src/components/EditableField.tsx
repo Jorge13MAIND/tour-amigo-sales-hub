@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 
 type FieldType = 'text' | 'number' | 'date' | 'select' | 'textarea';
 
-interface EditableFieldProps {
-  label: string;
+export interface EditableFieldProps {
+  label?: string;
   value: string;
   type?: FieldType;
   options?: { value: string; label: string }[];
@@ -17,6 +17,8 @@ interface EditableFieldProps {
   mono?: boolean;
   full?: boolean;
   placeholder?: string;
+  displayClassName?: string;
+  renderDisplay?: (value: string) => ReactNode;
 }
 
 export function EditableField({
@@ -29,6 +31,8 @@ export function EditableField({
   mono,
   full,
   placeholder,
+  displayClassName,
+  renderDisplay,
 }: EditableFieldProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -59,18 +63,26 @@ export function EditableField({
   if (!editing) {
     return (
       <div className={cn('group', full && 'col-span-2')}>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+        {label && <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>}
         <div
-          className="flex items-center gap-1.5 cursor-pointer rounded-md px-1 -mx-1 py-0.5 hover:bg-accent/50 transition-colors mt-0.5"
+          className={cn(
+            'flex items-center gap-1.5 cursor-pointer rounded-md px-1 -mx-1 py-0.5 hover:bg-accent/50 transition-colors',
+            label && 'mt-0.5',
+            displayClassName,
+          )}
           onClick={() => setEditing(true)}
         >
-          <p className={cn(
-            'text-sm flex-1',
-            mono ? 'font-mono font-semibold' : 'font-medium',
-            isMuted ? 'text-muted-foreground italic' : 'text-card-foreground'
-          )}>
-            {value || placeholder || 'Click to edit'}
-          </p>
+          {renderDisplay ? (
+            <div className="flex-1">{renderDisplay(value)}</div>
+          ) : (
+            <p className={cn(
+              'text-sm flex-1',
+              mono ? 'font-mono font-semibold' : 'font-medium',
+              isMuted ? 'text-muted-foreground italic' : 'text-card-foreground'
+            )}>
+              {value || placeholder || 'Click to edit'}
+            </p>
+          )}
           <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
       </div>
@@ -80,7 +92,7 @@ export function EditableField({
   if (type === 'select' && options) {
     return (
       <div className={cn(full && 'col-span-2')}>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+        {label && <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>}
         <Select value={draft} onValueChange={(v) => { onSave(v); setEditing(false); }}>
           <SelectTrigger className="h-8 text-xs">
             <SelectValue />
@@ -97,7 +109,7 @@ export function EditableField({
 
   return (
     <div className={cn(full && 'col-span-2')}>
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+      {label && <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>}
       <div className="flex items-center gap-1">
         {type === 'textarea' ? (
           <Textarea

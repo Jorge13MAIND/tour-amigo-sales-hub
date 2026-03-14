@@ -115,7 +115,7 @@ function StakeholderForm({ onSubmit, onCancel, isLoading, initial }: {
   const [name, setName] = useState(initial?.name || '');
   const [role, setRole] = useState(initial?.role || '');
   const [email, setEmail] = useState(initial?.email || '');
-  const [type, setType] = useState(initial?.stakeholder_type || 'user');
+  const [type, setType] = useState<string>(initial?.stakeholder_type || 'user');
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
