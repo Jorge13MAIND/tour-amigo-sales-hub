@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
 const ALLOWED_DOMAIN = 'touramigo.com';
