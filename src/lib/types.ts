@@ -333,19 +333,30 @@ export interface OutreachMetric {
   period_type: 'daily' | 'weekly' | 'monthly';
   period_start: string;
   period_end: string;
-  contacts_processed: number;
   emails_sent: number;
+  emails_delivered: number;
+  emails_bounced: number;
   emails_opened: number;
+  unique_opens: number;
+  emails_clicked: number;
   emails_replied: number;
   positive_replies: number;
   negative_replies: number;
-  bounces: number;
+  neutral_replies: number;
+  meetings_booked: number;
+  deals_created: number;
+  delivery_rate: number | null;
+  bounce_rate: number | null;
   open_rate: number | null;
+  click_rate: number | null;
   reply_rate: number | null;
   positive_reply_rate: number | null;
-  bounce_rate: number | null;
+  meeting_rate: number | null;
+  conversion_rate: number | null;
   by_tier: Record<string, unknown> | null;
   by_email_angle: Record<string, unknown> | null;
+  by_title: Record<string, unknown> | null;
+  by_region: Record<string, unknown> | null;
   created_at: string;
 }
 

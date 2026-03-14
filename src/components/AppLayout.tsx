@@ -5,9 +5,11 @@ import { HeaderBar } from './HeaderBar';
 import { DealDetailPanel } from './DealDetailPanel';
 import { AIChatPanel } from './AIChatPanel';
 import { useAppContext } from '@/contexts/AppContext';
+import { useRealtimeNotifications } from '@/hooks/useNotifications';
 
 export function AppLayout() {
   const { isChatOpen, setIsChatOpen } = useAppContext();
+  useRealtimeNotifications();
 
   return (
     <SidebarProvider>

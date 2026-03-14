@@ -20,6 +20,19 @@ const DEAL_PROPERTY_MAP: Record<string, string> = {
   number_of_users: 'number_of_users',
 };
 
+// Stage label to HubSpot stage ID mapping
+const STAGE_LABEL_TO_ID: Record<string, string> = {
+  'Demo Scheduled': '962694179',
+  'Additional Demo': '168848470',
+  'Demo Completed': 'closedwon',
+  'Proposal Sent': 'closedlost',
+  'Negotiation': '169206147',
+  'Commit': '168848472',
+  'Closed Won': '168848473',
+  'Closed Lost': '168848474',
+  'Follow Up Future': '266180272',
+};
+
 function getSupabase() {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -50,7 +63,7 @@ async function hubspotFetch(path: string, options: RequestInit = {}) {
   return res.status === 204 ? null : res.json();
 }
 
-// ─── Action Handlers ───
+// --- Action Handlers ---
 
 async function updateDeal(payload: {
   deal_id: number;
@@ -59,15 +72,24 @@ async function updateDeal(payload: {
   const { deal_id, fields } = payload;
   const supabase = getSupabase();
 
-  // Build HubSpot properties
   const hubspotProps: Record<string, unknown> = {};
   const localUpdates: Record<string, unknown> = {};
+
+  // Handle deal_stage_label -> convert to deal_stage ID for HubSpot
+  if (fields.deal_stage_label && typeof fields.deal_stage_label === 'string') {
+    const stageId = STAGE_LABEL_TO_ID[fields.deal_stage_label];
+    if (stageId) {
+      hubspotProps['dealstage'] = stageId;
+      localUpdates['deal_stage'] = stageId;
+      localUpdates['deal_stage_label'] = fields.deal_stage_label;
+    }
+    delete fields.deal_stage_label;
+  }
 
   for (const [key, value] of Object.entries(fields)) {
     localUpdates[key] = value;
     const hsKey = DEAL_PROPERTY_MAP[key];
     if (hsKey) {
-      // Format dates for HubSpot (midnight UTC)
       if (key === 'close_date' && value) {
         hubspotProps[hsKey] = new Date(value as string).setUTCHours(0, 0, 0, 0);
       } else {
@@ -92,6 +114,16 @@ async function updateDeal(payload: {
     .eq('id', deal_id);
   if (error) throw new Error(`Supabase update failed: ${error.message}`);
 
+  // Log to agent_activity
+  await supabase.from('agent_activity').insert({
+    agent_name: 'command-center',
+    action_type: 'deal_updated',
+    deal_id,
+    description: `Deal ${deal_id} updated via Command Center: ${Object.keys({...fields, ...(hubspotProps.dealstage ? {deal_stage: hubspotProps.dealstage} : {})}).join(', ')}`,
+    result: 'auto_executed',
+    metadata: { fields: localUpdates },
+  });
+
   return { success: true, deal_id };
 }
 
@@ -103,7 +135,6 @@ async function createNote(payload: {
   const supabase = getSupabase();
   const timestamp = new Date().toISOString();
 
-  // Create note in HubSpot
   try {
     await hubspotFetch('/crm/v3/objects/notes', {
       method: 'POST',
@@ -122,7 +153,6 @@ async function createNote(payload: {
     console.error('HubSpot note creation failed, saving locally only:', e);
   }
 
-  // Insert into deal_room_feed
   const { error } = await supabase.from('deal_room_feed').insert({
     deal_id,
     source: 'manual',
@@ -237,7 +267,27 @@ async function deleteStakeholder(payload: { stakeholder_id: string }) {
   return { success: true };
 }
 
-// ─── Main Handler ───
+async function markNotificationRead(payload: { notification_id: string }) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('atlas_notifications')
+    .update({ read: true, read_at: new Date().toISOString() })
+    .eq('id', payload.notification_id);
+  if (error) throw new Error(`Mark read failed: ${error.message}`);
+  return { success: true };
+}
+
+async function markAllNotificationsRead() {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('atlas_notifications')
+    .update({ read: true, read_at: new Date().toISOString() })
+    .eq('read', false);
+  if (error) throw new Error(`Mark all read failed: ${error.message}`);
+  return { success: true };
+}
+
+// --- Main Handler ---
 
 const ACTIONS: Record<string, (payload: any) => Promise<any>> = {
   update_deal: updateDeal,
@@ -249,6 +299,8 @@ const ACTIONS: Record<string, (payload: any) => Promise<any>> = {
   update_deal_room: updateDealRoom,
   upsert_stakeholder: upsertStakeholder,
   delete_stakeholder: deleteStakeholder,
+  mark_notification_read: markNotificationRead,
+  mark_all_notifications_read: markAllNotificationsRead,
 };
 
 Deno.serve(async (req) => {
@@ -257,7 +309,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, payload } = await req.json();
+    const body = await req.json();
+    const action = body.action;
+    // Support both { action, payload: {...} } and { action, ...rest } formats
+    const payload = body.payload || ((() => { const { action: _, ...rest } = body; return rest; })());
 
     if (!action || !ACTIONS[action]) {
       return new Response(
