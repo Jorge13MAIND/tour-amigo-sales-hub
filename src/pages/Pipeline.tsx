@@ -1,6 +1,7 @@
-import { useMemo, useState, memo } from 'react';
+import { useMemo, useState, memo, useCallback } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { useDeals } from '@/hooks/useDeals';
+import { useUpdateDeal } from '@/hooks/useDealMutations';
 import { RiskBadge } from '@/components/RiskBadge';
 import { formatCurrency } from '@/lib/format';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +9,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Deal } from '@/lib/types';
 import { STAGE_COLORS } from '@/lib/types';
 import { Shield } from 'lucide-react';
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 const KNOWN_STAGES = ['Demo Scheduled', 'Additional Demo', 'Demo Completed', 'Proposal Sent', 'Negotiation'];
 
@@ -20,9 +34,15 @@ const STATUS_BORDER: Record<string, string> = {
 export default function Pipeline() {
   const { selectedPipeline, setSelectedDealId } = useAppContext();
   const { data: deals, isLoading } = useDeals(selectedPipeline);
+  const updateDeal = useUpdateDeal();
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [amountFilter, setAmountFilter] = useState('all');
   const [competitorFilter, setCompetitorFilter] = useState('all');
+  const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const filteredDeals = useMemo(() => {
     if (!deals) return [];
@@ -44,6 +64,27 @@ export default function Pipeline() {
     return ordered.length > 0 ? ordered : KNOWN_STAGES;
   }, [deals]);
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const deal = filteredDeals.find((d) => d.id === event.active.id);
+    setActiveDeal(deal || null);
+  }, [filteredDeals]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveDeal(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const dealId = active.id as number;
+    const targetStage = over.id as string;
+    const deal = filteredDeals.find((d) => d.id === dealId);
+    if (!deal || deal.deal_stage_label === targetStage) return;
+
+    updateDeal.mutate({
+      deal_id: dealId,
+      fields: { deal_stage_label: targetStage },
+    });
+  }, [filteredDeals, updateDeal]);
+
   if (isLoading) {
     return (
       <div className="flex gap-4">
@@ -62,40 +103,69 @@ export default function Pipeline() {
         <FilterSelect label="Competitor" value={competitorFilter} onChange={setCompetitorFilter} options={[['all', 'All'], ['yes', 'Has competitor'], ['no', 'No competitor']]} />
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {columns.map((stage) => {
-          const stageDeals = filteredDeals
-            .filter((d) => d.deal_stage_label === stage)
-            .sort((a, b) => b.risk_score - a.risk_score);
-          const color = STAGE_COLORS[stage] || '#888';
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {columns.map((stage) => {
+            const stageDeals = filteredDeals
+              .filter((d) => d.deal_stage_label === stage)
+              .sort((a, b) => b.risk_score - a.risk_score);
 
-          return (
-            <div key={stage} className="flex-1 min-w-[240px] max-w-[300px]">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                <span className="text-sm font-semibold text-foreground">{stage}</span>
-                <span className="text-xs text-muted-foreground font-mono bg-muted rounded-full px-2 py-0.5">{stageDeals.length}</span>
-              </div>
-              <div className="space-y-2.5 min-h-[200px]">
-                {stageDeals.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground bg-card/50">
-                    No deals
-                  </div>
-                ) : (
-                  stageDeals.map((deal) => (
-                    <KanbanCard key={deal.id} deal={deal} onClick={() => setSelectedDealId(deal.id)} />
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
+            return (
+              <StageColumn key={stage} stage={stage} deals={stageDeals} onCardClick={setSelectedDealId} />
+            );
+          })}
+        </div>
+
+        <DragOverlay>
+          {activeDeal && <KanbanCard deal={activeDeal} onClick={() => {}} isDragging />}
+        </DragOverlay>
+      </DndContext>
+    </div>
+  );
+}
+
+function StageColumn({ stage, deals, onCardClick }: { stage: string; deals: Deal[]; onCardClick: (id: number) => void }) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage });
+  const color = STAGE_COLORS[stage] || '#888';
+
+  return (
+    <div ref={setNodeRef} className={`flex-1 min-w-[240px] max-w-[300px] transition-colors rounded-xl ${isOver ? 'bg-primary/5 ring-2 ring-primary/20' : ''}`}>
+      <div className="flex items-center gap-2 mb-3 px-1">
+        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+        <span className="text-sm font-semibold text-foreground">{stage}</span>
+        <span className="text-xs text-muted-foreground font-mono bg-muted rounded-full px-2 py-0.5">{deals.length}</span>
+      </div>
+      <div className="space-y-2.5 min-h-[200px] p-1">
+        {deals.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground bg-card/50">
+            Drop deals here
+          </div>
+        ) : (
+          deals.map((deal) => (
+            <DraggableCard key={deal.id} deal={deal} onClick={() => onCardClick(deal.id)} />
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-const KanbanCard = memo(function KanbanCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
+function DraggableCard({ deal, onClick }: { deal: Deal; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: deal.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <KanbanCard deal={deal} onClick={onClick} />
+    </div>
+  );
+}
+
+const KanbanCard = memo(function KanbanCard({ deal, onClick, isDragging }: { deal: Deal; onClick: () => void; isDragging?: boolean }) {
   const days = deal.days_since_contact;
   const daysColor = days === null ? 'text-muted-foreground' : days > 14 ? 'text-destructive' : days > 7 ? 'text-risk-medium' : 'text-risk-low';
   const priorityColor = deal.priority?.toLowerCase() === 'high' ? 'bg-destructive'
@@ -105,7 +175,7 @@ const KanbanCard = memo(function KanbanCard({ deal, onClick }: { deal: Deal; onC
 
   return (
     <div
-      className={`rounded-xl border border-border bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all shadow-sm border-l-[3px] ${statusBorder}`}
+      className={`rounded-xl border border-border bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all shadow-sm border-l-[3px] ${statusBorder} ${isDragging ? 'shadow-lg rotate-2 scale-105' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">

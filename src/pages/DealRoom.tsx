@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useDealRoom, useDealStakeholders, useDealRoomFeed, useDealDocuments } from '@/hooks/useDealRooms';
+import { useUpdateDealRoom, useCreateNote } from '@/hooks/useDealMutations';
 import { ClosePlanTimeline } from '@/components/deal-room/ClosePlanTimeline';
 import { StakeholderCards } from '@/components/deal-room/StakeholderCards';
 import { ActivityFeed } from '@/components/deal-room/ActivityFeed';
@@ -7,6 +8,8 @@ import { RiskTracker } from '@/components/deal-room/RiskTracker';
 import { CompetitiveIntel } from '@/components/deal-room/CompetitiveIntel';
 import { DocumentList } from '@/components/deal-room/DocumentList';
 import { MomentumBadge } from '@/components/deal-room/MomentumBadge';
+import { EditableField } from '@/components/EditableField';
+import { AddNoteForm } from '@/components/AddNoteForm';
 import { formatCurrency } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, DollarSign, Target, Users, AlertTriangle } from 'lucide-react';
@@ -22,6 +25,8 @@ export default function DealRoom() {
   const { data: stakeholders } = useDealStakeholders(room?.deal_id);
   const { data: feed } = useDealRoomFeed(room?.deal_id);
   const { data: documents } = useDealDocuments(room?.deal_id);
+  const updateRoom = useUpdateDealRoom();
+  const createNote = useCreateNote();
   const [activeTab, setActiveTab] = useState<Tab>('Close Plan');
 
   if (isLoading) {
@@ -55,6 +60,14 @@ export default function DealRoom() {
     standard: 'bg-muted text-muted-foreground',
   };
 
+  const handleRoomSave = (field: string, value: string) => {
+    const fields: Record<string, unknown> = {};
+    if (field === 'total_contract_value') fields.total_contract_value = value ? Number(value) : null;
+    else if (field === 'close_probability') fields.close_probability = value ? Number(value) : null;
+    else fields[field] = value || null;
+    updateRoom.mutate({ room_id: room.id, fields });
+  };
+
   return (
     <div className="space-y-5 max-w-[1200px]">
       {/* Header */}
@@ -78,16 +91,30 @@ export default function DealRoom() {
           </div>
         </div>
 
-        {/* Metric cards */}
+        {/* Metric cards — editable */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="rounded-xl border border-border bg-card p-4 text-center">
             <DollarSign className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
-            <p className="text-xl font-bold text-foreground">{room.total_contract_value ? formatCurrency(room.total_contract_value) : '—'}</p>
+            <EditableField
+              type="number"
+              value={room.total_contract_value ? String(room.total_contract_value) : ''}
+              onSave={(v) => handleRoomSave('total_contract_value', v)}
+              placeholder="—"
+              displayClassName="text-xl font-bold text-foreground"
+              renderDisplay={(v) => <span>{v ? formatCurrency(Number(v)) : '—'}</span>}
+            />
             <p className="text-[10px] text-muted-foreground uppercase">TCV</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center">
             <Target className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
-            <p className={`text-xl font-bold ${probColor}`}>{room.close_probability ?? '—'}%</p>
+            <EditableField
+              type="number"
+              value={room.close_probability != null ? String(room.close_probability) : ''}
+              onSave={(v) => handleRoomSave('close_probability', v)}
+              placeholder="—"
+              displayClassName={`text-xl font-bold ${probColor}`}
+              renderDisplay={(v) => <span>{v ? `${v}%` : '—'}</span>}
+            />
             <p className="text-[10px] text-muted-foreground uppercase">Probability</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center">
@@ -123,9 +150,14 @@ export default function DealRoom() {
       {/* Tab content */}
       <div className="min-h-[400px]">
         {activeTab === 'Close Plan' && <ClosePlanTimeline steps={room.close_plan || []} targetCloseDate={room.target_close_date} />}
-        {activeTab === 'Stakeholders' && <StakeholderCards stakeholders={stakeholders || []} />}
-        {activeTab === 'Activity' && <ActivityFeed feed={feed || []} />}
-        {activeTab === 'Risks' && <RiskTracker risks={room.risks || []} />}
+        {activeTab === 'Stakeholders' && <StakeholderCards stakeholders={stakeholders || []} dealId={room.deal_id} />}
+        {activeTab === 'Activity' && (
+          <div className="space-y-6">
+            <AddNoteForm onSubmit={(content) => createNote.mutate({ deal_id: room.deal_id, content })} isLoading={createNote.isPending} />
+            <ActivityFeed feed={feed || []} />
+          </div>
+        )}
+        {activeTab === 'Risks' && <RiskTracker risks={room.risks || []} roomId={room.id} />}
         {activeTab === 'Intel' && <CompetitiveIntel intel={room.competitive_intel} keyMetrics={room.key_metrics} pricingDetails={room.pricing_details} />}
         {activeTab === 'Docs' && <DocumentList documents={documents || []} />}
       </div>
