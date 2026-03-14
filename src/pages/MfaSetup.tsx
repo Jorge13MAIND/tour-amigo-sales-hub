@@ -22,7 +22,7 @@ export default function MfaSetup() {
 
   const checkExistingFactors = async () => {
     const { data: factors } = await supabase.auth.mfa.listFactors();
-    const verified = factors?.totp?.filter(f => f.status === 'verified') || [];
+    const verified = factors?.totp?.filter(f => (f.status as string) === 'verified') || [];
     
     if (verified.length > 0) {
       // User has MFA enrolled, just needs to verify
