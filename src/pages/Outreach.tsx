@@ -1,17 +1,24 @@
 import { useState } from 'react';
 import { useOutreachContacts, type OutreachFilters } from '@/hooks/useOutreachContacts';
 import { useOutreachStats } from '@/hooks/useOutreachContacts';
-import { useLatestOutreachMetric } from '@/hooks/useOutreachMetrics';
+import { useLatestOutreachMetric, useOutreachMetricsDaily } from '@/hooks/useOutreachMetrics';
 import { MetricCard } from '@/components/MetricCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { relativeTime } from '@/lib/format';
-import { Send, Eye, MessageSquare, ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { relativeTime, formatShortDate } from '@/lib/format';
+import {
+  Send, Eye, MessageSquare, ThumbsUp, ChevronDown, ChevronUp,
+  Search, ExternalLink, Copy, Check,
+} from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  AreaChart, Area, CartesianGrid,
+} from 'recharts';
 import type { OutreachContact } from '@/lib/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -30,16 +37,18 @@ const TIER_COLORS: Record<string, string> = {
   tier_3: 'bg-muted text-muted-foreground',
 };
 
-const FUNNEL_COLORS = ['#94a3b8', '#f97316', '#3b82f6', '#22c55e', '#10b981'];
+const FUNNEL_COLORS = ['#94a3b8', '#f97316', '#3b82f6', '#22c55e'];
 const FUNNEL_STAGES = ['researched', 'enrolled', 'replied', 'converted'];
 
 export default function Outreach() {
   const [filters, setFilters] = useState<OutreachFilters>({ page: 1, pageSize: 25 });
+  const [searchInput, setSearchInput] = useState('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const { data: contactsData, isLoading } = useOutreachContacts(filters);
   const { data: stats } = useOutreachStats();
   const { data: latestMetric } = useLatestOutreachMetric();
+  const { data: dailyMetrics } = useOutreachMetricsDaily();
 
   const contacts = contactsData?.contacts || [];
   const total = contactsData?.total || 0;
@@ -62,6 +71,19 @@ export default function Outreach() {
         .sort((a, b) => b.replyRate - a.replyRate)
     : [];
 
+  // Daily trend data
+  const trendData = (dailyMetrics || []).map(m => ({
+    date: formatShortDate(m.period_start),
+    sent: m.emails_sent,
+    replied: m.emails_replied,
+    positive: m.positive_replies,
+  }));
+
+  // Search with debounce-like behavior (apply on Enter or blur)
+  const applySearch = () => {
+    setFilters(f => ({ ...f, search: searchInput || undefined, page: 1 }));
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-5 max-w-[1400px]">
@@ -82,22 +104,22 @@ export default function Outreach() {
           label="Sent Today"
           value={stats?.todaySent ?? 0}
           subtitle={
-            <div className="space-y-1 mt-1">
+            <>
               <span className="text-[10px]">of 50 daily target</span>
-              <Progress value={Math.min(((stats?.todaySent ?? 0) / 50) * 100, 100)} className="h-1.5" />
-            </div>
+              <Progress value={Math.min(((stats?.todaySent ?? 0) / 50) * 100, 100)} className="h-1.5 mt-1" />
+            </>
           }
           icon={<Send className="h-4 w-4 text-orange-500" />}
         />
         <MetricCard
           label="Open Rate"
-          value={latestMetric?.open_rate != null ? `${(latestMetric.open_rate * 100).toFixed(1)}%` : '—'}
+          value={latestMetric?.open_rate != null ? `${(latestMetric.open_rate * 100).toFixed(1)}%` : '--'}
           subtitle="last 7 days"
           icon={<Eye className="h-4 w-4 text-blue-500" />}
         />
         <MetricCard
           label="Reply Rate"
-          value={latestMetric?.reply_rate != null ? `${(latestMetric.reply_rate * 100).toFixed(1)}%` : '—'}
+          value={latestMetric?.reply_rate != null ? `${(latestMetric.reply_rate * 100).toFixed(1)}%` : '--'}
           subtitle="last 7 days"
           icon={<MessageSquare className="h-4 w-4 text-emerald-500" />}
         />
@@ -109,14 +131,53 @@ export default function Outreach() {
         />
       </div>
 
+      {/* Tier Breakdown */}
+      {stats?.totalByTier && Object.keys(stats.totalByTier).length > 0 && (
+        <div className="flex gap-3 items-center text-xs">
+          <span className="text-muted-foreground font-medium">By Tier:</span>
+          {(['tier_1', 'tier_2', 'tier_3'] as const).map(t => (
+            <Badge key={t} variant="secondary" className={TIER_COLORS[t]}>
+              {t.replace('_', ' ')}: {stats.totalByTier[t] || 0}
+            </Badge>
+          ))}
+          <span className="text-muted-foreground ml-auto">
+            Total: {Object.values(stats.totalByTier).reduce((a, b) => a + b, 0)}
+          </span>
+        </div>
+      )}
+
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Daily Trend */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Daily Send Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={trendData} margin={{ left: -10, right: 5, top: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="sent" stroke="#f97316" fill="#f97316" fillOpacity={0.15} name="Sent" />
+                  <Area type="monotone" dataKey="replied" stroke="#22c55e" fill="#22c55e" fillOpacity={0.15} name="Replied" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground py-8 text-center">No daily data yet</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Outreach Funnel */}
+        <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Outreach Pipeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={180}>
               <BarChart data={funnelData} layout="vertical" margin={{ left: 20 }}>
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={90} />
@@ -131,13 +192,14 @@ export default function Outreach() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        {/* Reply Rate by Angle */}
+        <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Reply Rate by Angle</CardTitle>
           </CardHeader>
           <CardContent>
             {angleData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={angleData} margin={{ left: 10 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={50} />
                   <YAxis tick={{ fontSize: 10 }} unit="%" />
@@ -154,7 +216,18 @@ export default function Outreach() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
-        <Select value={filters.status || 'all'} onValueChange={v => setFilters(f => ({ ...f, status: v, page: 1 }))}>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search name, company, email..."
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && applySearch()}
+            onBlur={applySearch}
+            className="pl-9 h-9 w-[240px] text-sm"
+          />
+        </div>
+        <Select value={filters.status || 'all'} onValueChange={v => setFilters(f => ({ ...f, status: v === 'all' ? undefined : v, page: 1 }))}>
           <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
@@ -163,7 +236,7 @@ export default function Outreach() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={filters.tier || 'all'} onValueChange={v => setFilters(f => ({ ...f, tier: v, page: 1 }))}>
+        <Select value={filters.tier || 'all'} onValueChange={v => setFilters(f => ({ ...f, tier: v === 'all' ? undefined : v, page: 1 }))}>
           <SelectTrigger className="w-[120px] h-9 text-sm"><SelectValue placeholder="Tier" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Tiers</SelectItem>
@@ -218,24 +291,41 @@ export default function Outreach() {
 }
 
 function ContactRow({ contact: c, expanded, onToggle }: { contact: OutreachContact; expanded: boolean; onToggle: () => void }) {
+  const [copied, setCopied] = useState(false);
   const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || c.email;
+
+  const copyEmail = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(c.email);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const hubspotUrl = c.hubspot_contact_id
+    ? `https://app.hubspot.com/contacts/45479361/contact/${c.hubspot_contact_id}`
+    : null;
+
+  const dealUrl = c.hubspot_deal_id
+    ? `https://app.hubspot.com/contacts/45479361/deal/${c.hubspot_deal_id}`
+    : null;
 
   return (
     <>
       <tr className="border-b border-border hover:bg-muted/30 cursor-pointer transition-colors" onClick={onToggle}>
         <td className="p-3 font-medium text-foreground">{name}</td>
-        <td className="p-3 text-muted-foreground">{c.company || '—'}</td>
-        <td className="p-3">{c.tier ? <Badge variant="secondary" className={TIER_COLORS[c.tier]}>{c.tier.replace('_', ' ')}</Badge> : '—'}</td>
+        <td className="p-3 text-muted-foreground">{c.company || '--'}</td>
+        <td className="p-3">{c.tier ? <Badge variant="secondary" className={TIER_COLORS[c.tier]}>{c.tier.replace('_', ' ')}</Badge> : '--'}</td>
         <td className="p-3 font-mono text-xs">{c.icp_score}</td>
         <td className="p-3"><Badge variant="secondary" className={STATUS_COLORS[c.status] || ''}>{c.status}</Badge></td>
-        <td className="p-3 text-xs text-muted-foreground capitalize">{c.email_angle?.replace(/_/g, ' ') || '—'}</td>
-        <td className="p-3 text-xs text-muted-foreground">{c.email_sent_at ? relativeTime(c.email_sent_at) : '—'}</td>
+        <td className="p-3 text-xs text-muted-foreground capitalize">{c.email_angle?.replace(/_/g, ' ') || '--'}</td>
+        <td className="p-3 text-xs text-muted-foreground">{c.email_sent_at ? relativeTime(c.email_sent_at) : '--'}</td>
         <td className="p-3">{expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}</td>
       </tr>
       {expanded && (
         <tr className="bg-muted/20">
           <td colSpan={8} className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+              {/* Contact Details */}
               <div className="space-y-2">
                 <p className="font-semibold text-foreground text-sm">Contact Details</p>
                 <p><span className="text-muted-foreground">Email:</span> {c.email}</p>
@@ -243,24 +333,73 @@ function ContactRow({ contact: c, expanded, onToggle }: { contact: OutreachConta
                 {c.subject_line_text && <p><span className="text-muted-foreground">Subject:</span> {c.subject_line_text}</p>}
                 {c.skip_reason && <p><span className="text-muted-foreground">Skip reason:</span> {c.skip_reason}</p>}
               </div>
+
+              {/* Timeline */}
               <div className="space-y-2">
                 <p className="font-semibold text-foreground text-sm">Timeline</p>
-                {c.email_sent_at && <p>📤 Sent {relativeTime(c.email_sent_at)}</p>}
-                {c.opened_at && <p>👁️ Opened {relativeTime(c.opened_at)}</p>}
-                {c.clicked_at && <p>🔗 Clicked {relativeTime(c.clicked_at)}</p>}
-                {c.replied_at && <p>💬 Replied {relativeTime(c.replied_at)} {c.reply_sentiment && <Badge variant="secondary" className={c.reply_sentiment === 'positive' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-destructive/15 text-destructive'}>{c.reply_sentiment}</Badge>}</p>}
-                {c.bounced && <p>❌ Bounced</p>}
-                {c.meeting_booked && <p>📅 Meeting booked</p>}
+                {c.email_sent_at && <p>Sent {relativeTime(c.email_sent_at)}</p>}
+                {c.opened_at && <p>Opened {relativeTime(c.opened_at)}</p>}
+                {c.clicked_at && <p>Clicked {relativeTime(c.clicked_at)}</p>}
+                {c.replied_at && (
+                  <p>
+                    Replied {relativeTime(c.replied_at)}{' '}
+                    {c.reply_sentiment && (
+                      <Badge variant="secondary" className={c.reply_sentiment === 'positive' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-destructive/15 text-destructive'}>
+                        {c.reply_sentiment}
+                      </Badge>
+                    )}
+                  </p>
+                )}
+                {c.bounced && <p>Bounced</p>}
+                {c.meeting_booked && <p>Meeting booked</p>}
               </div>
+
+              {/* Research Data */}
               <div className="space-y-2">
                 <p className="font-semibold text-foreground text-sm">Research Data</p>
                 {Object.entries(c.research_data || {}).length > 0 ? (
-                  Object.entries(c.research_data).map(([k, v]) => (
+                  Object.entries(c.research_data).slice(0, 6).map(([k, v]) => (
                     <p key={k}><span className="text-muted-foreground capitalize">{k.replace(/_/g, ' ')}:</span> {String(v)}</p>
                   ))
                 ) : (
                   <p className="text-muted-foreground">No research data</p>
                 )}
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-2">
+                <p className="font-semibold text-foreground text-sm">Actions</p>
+                <div className="flex flex-col gap-2">
+                  {hubspotUrl && (
+                    <a
+                      href={hubspotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" /> View in HubSpot
+                    </a>
+                  )}
+                  {dealUrl && (
+                    <a
+                      href={dealUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" /> View Deal
+                    </a>
+                  )}
+                  <button
+                    onClick={copyEmail}
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline text-left"
+                  >
+                    {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                    {copied ? 'Copied' : 'Copy email'}
+                  </button>
+                </div>
               </div>
             </div>
           </td>

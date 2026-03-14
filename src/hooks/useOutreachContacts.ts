@@ -5,6 +5,7 @@ import type { OutreachContact } from '@/lib/types';
 export interface OutreachFilters {
   status?: string;
   tier?: string;
+  search?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -12,7 +13,7 @@ export interface OutreachFilters {
 }
 
 export function useOutreachContacts(filters: OutreachFilters = {}) {
-  const { status, tier, dateFrom, dateTo, page = 1, pageSize = 25 } = filters;
+  const { status, tier, search, dateFrom, dateTo, page = 1, pageSize = 25 } = filters;
   return useQuery({
     queryKey: ['outreach-contacts', filters],
     queryFn: async () => {
@@ -23,6 +24,10 @@ export function useOutreachContacts(filters: OutreachFilters = {}) {
 
       if (status && status !== 'all') query = query.eq('status', status);
       if (tier && tier !== 'all') query = query.eq('tier', tier);
+      if (search && search.trim()) {
+        const s = search.trim().toLowerCase();
+        query = query.or(`first_name.ilike.%${s}%,last_name.ilike.%${s}%,company.ilike.%${s}%,email.ilike.%${s}%`);
+      }
       if (dateFrom) query = query.gte('created_at', dateFrom);
       if (dateTo) query = query.lte('created_at', dateTo);
 
