@@ -149,6 +149,7 @@ export const AGENT_CONFIG: Record<AgentName, { icon: string; color: string; labe
   'deal-monitor': { icon: 'Search', color: 'text-slate-500', label: 'Deal Monitor' },
   'weekly-report': { icon: 'TrendingUp', color: 'text-indigo-500', label: 'Weekly Report' },
   'deal-room-sync': { icon: 'Building2', color: 'text-cyan-500', label: 'Deal Room Sync' },
+  'outreach-eod': { icon: 'BarChart3', color: 'text-rose-500', label: 'Outreach EOD' },
   'command-center': { icon: 'ShieldCheck', color: 'text-violet-500', label: 'Command Center' },
 };
 
