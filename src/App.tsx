@@ -22,6 +22,7 @@ const Approvals = lazy(() => import("./pages/Approvals"));
 const Improvements = lazy(() => import("./pages/Improvements"));
 const DealRoomList = lazy(() => import("./pages/DealRoomList"));
 const DealRoom = lazy(() => import("./pages/DealRoom"));
+const Outreach = lazy(() => import("./pages/Outreach"));
 
 const queryClient = new QueryClient();
 
