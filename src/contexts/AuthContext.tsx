@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
 const ALLOWED_DOMAIN = 'touramigo.com';
@@ -26,40 +26,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaRequired, setMfaRequired] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const email = session.user.email || '';
+    const handleSession = async (nextSession: Session | null) => {
+      if (nextSession?.user) {
+        const email = nextSession.user.email || '';
         const domain = email.split('@')[1];
+
         if (domain !== ALLOWED_DOMAIN) {
           await supabase.auth.signOut();
           setSession(null);
+          setMfaVerified(false);
+          setMfaRequired(false);
           setIsLoading(false);
           return;
         }
-        // Check MFA status
+
+        setSession(nextSession);
         await checkMfaStatus();
-      } else {
-        setMfaVerified(false);
-        setMfaRequired(false);
+        setIsLoading(false);
+        return;
       }
+
+      setSession(null);
+      setMfaVerified(false);
+      setMfaRequired(false);
       setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void handleSession(nextSession);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const email = session.user.email || '';
-        const domain = email.split('@')[1];
-        if (domain !== ALLOWED_DOMAIN) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setIsLoading(false);
-          return;
-        }
-        setSession(session);
-        await checkMfaStatus();
-      }
-      setIsLoading(false);
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      void handleSession(session);
     });
 
     return () => subscription.unsubscribe();
@@ -97,16 +95,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const settingsResponse = await fetch(
+      `${SUPABASE_URL}/auth/v1/settings?apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`,
+    );
+
+    if (!settingsResponse.ok) {
+      throw new Error('Unable to validate Google auth settings.');
+    }
+
+    const settings = await settingsResponse.json();
+    if (!settings?.external?.google) {
+      throw new Error('Google auth is disabled in Auth Providers. Enable Google and retry.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
+        skipBrowserRedirect: true,
         queryParams: {
           hd: ALLOWED_DOMAIN,
         },
       },
     });
-    if (error) throw error;
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.url) {
+      throw new Error('Google auth URL was not generated.');
+    }
+
+    const oauthUrl = new URL(data.url);
+    const isAllowedHost = oauthUrl.hostname === 'accounts.google.com' || oauthUrl.hostname.endsWith('.supabase.co');
+    if (!isAllowedHost) {
+      throw new Error('Invalid OAuth redirect host.');
+    }
+
+    window.location.assign(data.url);
   };
 
   const signOut = async () => {
