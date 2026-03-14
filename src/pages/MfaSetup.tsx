@@ -21,8 +21,8 @@ export default function MfaSetup() {
   }, []);
 
   const checkExistingFactors = async () => {
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const verified = factors?.totp?.filter(f => (f.status as string) === 'verified') || [];
+    const allFactors = factors?.totp || [];
+    const verified = allFactors.filter(f => f.factor_type === 'totp' && (f as any).status === 'verified');
     
     if (verified.length > 0) {
       // User has MFA enrolled, just needs to verify
@@ -30,10 +30,12 @@ export default function MfaSetup() {
       setStep('verify');
     } else {
       // Remove any unverified factors before enrolling
-      const unverified = factors?.totp?.filter(f => f.status === 'unverified') || [];
-      for (const f of unverified) {
+      for (const f of allFactors) {
         await supabase.auth.mfa.unenroll({ factorId: f.id });
       }
+      // Need to enroll
+      await startEnrollment();
+    }
       // Need to enroll
       await startEnrollment();
     }
