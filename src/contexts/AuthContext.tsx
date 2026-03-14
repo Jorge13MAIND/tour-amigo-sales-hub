@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const { data: factors } = await supabase.auth.mfa.listFactors();
-      const verifiedFactors = factors?.totp?.filter(f => f.status === 'verified') || [];
+      const verifiedFactors = factors?.totp?.filter(f => (f as any).status === 'verified') || [];
       
       if (verifiedFactors.length === 0) {
         // No MFA enrolled — user needs to set it up
