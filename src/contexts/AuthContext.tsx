@@ -26,40 +26,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaRequired, setMfaRequired] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const email = session.user.email || '';
+    const handleSession = async (nextSession: Session | null) => {
+      if (nextSession?.user) {
+        const email = nextSession.user.email || '';
         const domain = email.split('@')[1];
+
         if (domain !== ALLOWED_DOMAIN) {
           await supabase.auth.signOut();
           setSession(null);
+          setMfaVerified(false);
+          setMfaRequired(false);
           setIsLoading(false);
           return;
         }
-        // Check MFA status
-        await checkMfaStatus();
-      } else {
-        setMfaVerified(false);
-        setMfaRequired(false);
+
+        setSession(nextSession);
+        void checkMfaStatus();
+        setIsLoading(false);
+        return;
       }
+
+      setSession(null);
+      setMfaVerified(false);
+      setMfaRequired(false);
       setIsLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void handleSession(nextSession);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const email = session.user.email || '';
-        const domain = email.split('@')[1];
-        if (domain !== ALLOWED_DOMAIN) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setIsLoading(false);
-          return;
-        }
-        setSession(session);
-        await checkMfaStatus();
-      }
-      setIsLoading(false);
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      void handleSession(session);
     });
 
     return () => subscription.unsubscribe();
