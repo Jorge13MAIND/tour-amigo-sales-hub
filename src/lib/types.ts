@@ -83,6 +83,7 @@ export type AgentName =
   | 'improvement-scan'
   | 'deal-monitor'
   | 'deal-room-sync'
+  | 'outreach-eod'
   | 'command-center';
 
 export type AgentResult = 'success' | 'auto_executed' | 'needs_approval' | 'approved' | 'rejected' | 'failed' | 'skipped';
@@ -148,6 +149,7 @@ export const AGENT_CONFIG: Record<AgentName, { icon: string; color: string; labe
   'deal-monitor': { icon: 'Search', color: 'text-slate-500', label: 'Deal Monitor' },
   'weekly-report': { icon: 'TrendingUp', color: 'text-indigo-500', label: 'Weekly Report' },
   'deal-room-sync': { icon: 'Building2', color: 'text-cyan-500', label: 'Deal Room Sync' },
+  'outreach-eod': { icon: 'BarChart3', color: 'text-rose-500', label: 'Outreach EOD' },
   'command-center': { icon: 'ShieldCheck', color: 'text-violet-500', label: 'Command Center' },
 };
 
@@ -281,6 +283,69 @@ export interface DealDocument {
   stakeholders_mentioned: string[] | null;
   action_items: string[] | null;
   processed: boolean;
+  created_at: string;
+}
+
+// ── Outreach ──
+
+export interface OutreachContact {
+  id: string;
+  hubspot_contact_id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  title: string | null;
+  tier: 'tier_1' | 'tier_2' | 'tier_3' | null;
+  icp_score: number;
+  research_data: Record<string, unknown>;
+  skip_reason: string | null;
+  status: 'pending' | 'researched' | 'enrolled' | 'replied' | 'bounced' | 'skipped' | 'converted';
+  email_angle: string | null;
+  subject_line_text: string | null;
+  email_sent_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  replied_at: string | null;
+  reply_sentiment: 'positive' | 'negative' | null;
+  bounced: boolean;
+  meeting_booked: boolean;
+  hubspot_deal_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AtlasNotification {
+  id: string;
+  agent_name: string;
+  notification_type: string;
+  priority: 'low' | 'normal' | 'high' | 'critical';
+  title: string;
+  body: string | null;
+  metadata: Record<string, unknown>;
+  read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface OutreachMetric {
+  id: string;
+  period_type: 'daily' | 'weekly' | 'monthly';
+  period_start: string;
+  period_end: string;
+  contacts_processed: number;
+  emails_sent: number;
+  emails_opened: number;
+  emails_replied: number;
+  positive_replies: number;
+  negative_replies: number;
+  bounces: number;
+  open_rate: number | null;
+  reply_rate: number | null;
+  positive_reply_rate: number | null;
+  bounce_rate: number | null;
+  by_tier: Record<string, unknown> | null;
+  by_email_angle: Record<string, unknown> | null;
   created_at: string;
 }
 

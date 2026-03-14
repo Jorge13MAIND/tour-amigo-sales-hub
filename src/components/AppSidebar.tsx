@@ -1,4 +1,4 @@
-import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2 } from 'lucide-react';
+import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
 import { useAtRiskCount } from '@/hooks/useDeals';
@@ -49,6 +49,7 @@ export function AppSidebar() {
 
   const atlasItems: NavItem[] = [
     { title: 'Agent Feed', url: '/agents', icon: Bot, badge: 0, badgeColor: '' },
+    { title: 'Outreach', url: '/outreach', icon: Target, badge: 0, badgeColor: '' },
     { title: 'Follow-Ups', url: '/follow-ups', icon: Route, badge: 0, badgeColor: '' },
     { title: 'Approvals', url: '/approvals', icon: ShieldCheck, badge: pendingApprovals || 0, badgeColor: 'bg-risk-medium text-white' },
     { title: 'Improvements', url: '/improvements', icon: Lightbulb, badge: 0, badgeColor: '' },

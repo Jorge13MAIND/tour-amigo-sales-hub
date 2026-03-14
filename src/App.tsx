@@ -22,6 +22,7 @@ const Approvals = lazy(() => import("./pages/Approvals"));
 const Improvements = lazy(() => import("./pages/Improvements"));
 const DealRoomList = lazy(() => import("./pages/DealRoomList"));
 const DealRoom = lazy(() => import("./pages/DealRoom"));
+const Outreach = lazy(() => import("./pages/Outreach"));
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="/improvements" element={<Suspense fallback={<LazyFallback />}><Improvements /></Suspense>} />
         <Route path="/deal-rooms" element={<Suspense fallback={<LazyFallback />}><DealRoomList /></Suspense>} />
         <Route path="/deal-rooms/:id" element={<Suspense fallback={<LazyFallback />}><DealRoom /></Suspense>} />
+        <Route path="/outreach" element={<Suspense fallback={<LazyFallback />}><Outreach /></Suspense>} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

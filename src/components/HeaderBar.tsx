@@ -6,6 +6,7 @@ import { PIPELINE_LABELS, type PipelineKey } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 export function HeaderBar() {
   const { data: syncTime } = useSyncStatus();
@@ -36,6 +37,7 @@ export function HeaderBar() {
           {isStale && <AlertTriangle className="h-3.5 w-3.5" />}
           <span>Synced {syncTime ? relativeTime(syncTime) : '—'}</span>
         </div>
+        <NotificationCenter />
         <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg" onClick={refreshAll} title="Refresh data">
           <RefreshCw className="h-3.5 w-3.5" />
         </Button>
