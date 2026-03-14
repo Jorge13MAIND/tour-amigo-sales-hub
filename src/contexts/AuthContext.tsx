@@ -267,8 +267,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const authFallback: AuthContextType = {
+  session: null,
+  user: null,
+  isLoading: true,
+  mfaVerified: false,
+  mfaRequired: false,
+  signInWithGoogle: async () => {},
+  signOut: async () => {},
+  verifyMfaOtp: async () => {},
+  enrollMfa: async () => null,
+  verifyMfaEnrollment: async () => {},
+};
+
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    console.warn('useAuth called outside AuthProvider – returning safe fallback (likely HMR)');
+    return authFallback;
+  }
   return ctx;
 }
