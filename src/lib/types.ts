@@ -82,9 +82,10 @@ export type AgentName =
   | 'outreach-engine'
   | 'improvement-scan'
   | 'deal-monitor'
-  | 'deal-room-sync';
+  | 'deal-room-sync'
+  | 'command-center';
 
-export type AgentResult = 'success' | 'auto_executed' | 'needs_approval' | 'failed' | 'skipped';
+export type AgentResult = 'success' | 'auto_executed' | 'needs_approval' | 'approved' | 'rejected' | 'failed' | 'skipped';
 
 export interface AgentActivity {
   id: string;
@@ -147,6 +148,7 @@ export const AGENT_CONFIG: Record<AgentName, { icon: string; color: string; labe
   'deal-monitor': { icon: 'Search', color: 'text-slate-500', label: 'Deal Monitor' },
   'weekly-report': { icon: 'TrendingUp', color: 'text-indigo-500', label: 'Weekly Report' },
   'deal-room-sync': { icon: 'Building2', color: 'text-cyan-500', label: 'Deal Room Sync' },
+  'command-center': { icon: 'ShieldCheck', color: 'text-violet-500', label: 'Command Center' },
 };
 
 /** Agents that run weekly — use longer staleness threshold */
