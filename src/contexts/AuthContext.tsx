@@ -95,16 +95,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
+        skipBrowserRedirect: true,
         queryParams: {
           hd: ALLOWED_DOMAIN,
         },
       },
     });
-    if (error) throw error;
+
+    if (error) {
+      if (error.message?.includes('provider is not enabled')) {
+        throw new Error('Google auth is not enabled yet. Enable Google in Auth Providers and retry.');
+      }
+      throw error;
+    }
+
+    if (!data?.url) {
+      throw new Error('Google auth URL was not generated.');
+    }
+
+    const oauthUrl = new URL(data.url);
+    const isAllowedHost = oauthUrl.hostname === 'accounts.google.com' || oauthUrl.hostname.endsWith('.supabase.co');
+    if (!isAllowedHost) {
+      throw new Error('Invalid OAuth redirect host.');
+    }
+
+    window.location.assign(data.url);
   };
 
   const signOut = async () => {
