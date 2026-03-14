@@ -95,6 +95,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    const settingsResponse = await fetch(
+      `${SUPABASE_URL}/auth/v1/settings?apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`,
+    );
+
+    if (!settingsResponse.ok) {
+      throw new Error('Unable to validate Google auth settings.');
+    }
+
+    const settings = await settingsResponse.json();
+    if (!settings?.external?.google) {
+      throw new Error('Google auth is disabled in Auth Providers. Enable Google and retry.');
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -107,9 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      if (error.message?.includes('provider is not enabled')) {
-        throw new Error('Google auth is not enabled yet. Enable Google in Auth Providers and retry.');
-      }
       throw error;
     }
 
