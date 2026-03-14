@@ -1,21 +1,78 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
+import { AlertCircle, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
+
+const isEmbeddedApp = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  return 'Login failed. Please try again.';
+};
+
+type ProviderHealthStatus = 'checking' | 'ok' | 'error';
 
 export default function Login() {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isIframe, setIsIframe] = useState(false);
+  const [providerHealthStatus, setProviderHealthStatus] = useState<ProviderHealthStatus>('checking');
+  const [providerHealthMessage, setProviderHealthMessage] = useState('Checking Google auth configuration...');
+
+  useEffect(() => {
+    setIsIframe(isEmbeddedApp());
+
+    let isMounted = true;
+    const checkGoogleProvider = async () => {
+      try {
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/settings?apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`);
+        if (!response.ok) {
+          throw new Error('Could not validate auth provider settings.');
+        }
+
+        const settings = await response.json();
+        if (!settings?.external?.google) {
+          if (!isMounted) return;
+          setProviderHealthStatus('error');
+          setProviderHealthMessage('Google auth is disabled in Auth Providers.');
+          return;
+        }
+
+        if (!isMounted) return;
+        setProviderHealthStatus('ok');
+        setProviderHealthMessage('Google auth provider is enabled.');
+      } catch {
+        if (!isMounted) return;
+        setProviderHealthStatus('error');
+        setProviderHealthMessage('Unable to verify Google auth right now.');
+      }
+    };
+
+    void checkGoogleProvider();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
+
     try {
       await signInWithGoogle();
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
       setLoading(false);
     }
   };
@@ -28,9 +85,17 @@ export default function Login() {
             <span className="text-foreground">tour</span>
             <span className="text-primary">amigo</span>
           </h1>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-medium">
-            Command Center
-          </p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-medium">Command Center</p>
+        </div>
+
+        <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+            {providerHealthStatus === 'ok' ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> : null}
+            {providerHealthStatus === 'error' ? <AlertCircle className="h-3.5 w-3.5 text-destructive" /> : null}
+            {providerHealthStatus === 'checking' ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : null}
+            Auth health check
+          </div>
+          <p className="text-xs text-muted-foreground">{providerHealthMessage}</p>
         </div>
 
         <div className="space-y-4">
@@ -38,16 +103,11 @@ export default function Login() {
             Sign in with your <span className="font-semibold text-foreground">@touramigo.com</span> Google account
           </p>
 
-          <Button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full h-11 text-sm font-medium"
-            variant="outline"
-          >
+          <Button onClick={handleLogin} disabled={loading} className="w-full h-11 text-sm font-medium" variant="outline">
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
-              <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -57,14 +117,25 @@ export default function Login() {
             Continue with Google
           </Button>
 
-          {error && (
-            <p className="text-xs text-destructive text-center">{error}</p>
+          {isIframe && (
+            <p className="text-xs text-muted-foreground text-center">
+              If login is blocked in preview, open this app in a new tab first.
+            </p>
           )}
+
+          {isIframe && (
+            <Button asChild variant="ghost" className="w-full h-9 text-xs">
+              <a href={window.location.href} target="_blank" rel="noopener noreferrer">
+                Open in new tab
+                <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+              </a>
+            </Button>
+          )}
+
+          {error ? <p className="text-xs text-destructive text-center">{error}</p> : null}
         </div>
 
-        <p className="text-[10px] text-muted-foreground/50 text-center">
-          Only @touramigo.com accounts are allowed
-        </p>
+        <p className="text-[10px] text-muted-foreground/50 text-center">Only @touramigo.com accounts are allowed</p>
       </Card>
     </div>
   );

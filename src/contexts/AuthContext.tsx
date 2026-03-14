@@ -1,8 +1,21 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
 const ALLOWED_DOMAIN = 'touramigo.com';
+const SETTINGS_TIMEOUT_MS = 8000;
+
+const getEmailDomain = (email?: string | null) => email?.split('@')[1]?.toLowerCase() ?? '';
+
+const isEmbeddedApp = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
+const isAllowedOauthHost = (hostname: string) => hostname === 'accounts.google.com' || hostname.endsWith('.supabase.co');
 
 interface AuthContextType {
   session: Session | null;
@@ -25,122 +38,168 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mfaVerified, setMfaVerified] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
 
-  useEffect(() => {
-    const handleSession = async (nextSession: Session | null) => {
-      if (nextSession?.user) {
-        const email = nextSession.user.email || '';
-        const domain = email.split('@')[1];
-
-        if (domain !== ALLOWED_DOMAIN) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setMfaVerified(false);
-          setMfaRequired(false);
-          setIsLoading(false);
-          return;
-        }
-
-        setSession(nextSession);
-        await checkMfaStatus();
-        setIsLoading(false);
-        return;
-      }
-
-      setSession(null);
-      setMfaVerified(false);
-      setMfaRequired(false);
-      setIsLoading(false);
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void handleSession(nextSession);
-    });
-
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      void handleSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+  const resetAuthState = useCallback(() => {
+    setSession(null);
+    setMfaVerified(false);
+    setMfaRequired(false);
   }, []);
 
-  const checkMfaStatus = async () => {
+  const checkMfaStatus = useCallback(async () => {
     try {
-      const { data: { currentLevel }, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (error) {
-        console.error('MFA check error:', error);
+      const { data: assuranceData, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assuranceError) {
         setMfaVerified(false);
         setMfaRequired(false);
         return;
       }
-      
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const verifiedFactors = factors?.totp?.filter(f => (f as any).status === 'verified') || [];
-      
+
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) {
+        setMfaVerified(false);
+        setMfaRequired(false);
+        return;
+      }
+
+      const verifiedFactors = factors?.totp?.filter((factor) => factor.status === 'verified') ?? [];
+
       if (verifiedFactors.length === 0) {
-        // No MFA enrolled — user needs to set it up
         setMfaRequired(true);
         setMfaVerified(false);
-      } else if (currentLevel === 'aal2') {
+        return;
+      }
+
+      if (assuranceData.currentLevel === 'aal2') {
         setMfaVerified(true);
         setMfaRequired(false);
-      } else {
-        // Has MFA enrolled but hasn't verified this session
-        setMfaRequired(true);
-        setMfaVerified(false);
+        return;
       }
+
+      setMfaRequired(true);
+      setMfaVerified(false);
     } catch {
       setMfaVerified(false);
       setMfaRequired(false);
     }
-  };
+  }, []);
 
-  const signInWithGoogle = async () => {
-    const settingsResponse = await fetch(
-      `${SUPABASE_URL}/auth/v1/settings?apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`,
-    );
+  useEffect(() => {
+    let isMounted = true;
 
-    if (!settingsResponse.ok) {
-      throw new Error('Unable to validate Google auth settings.');
-    }
+    const handleSession = async (nextSession: Session | null) => {
+      if (!isMounted) return;
 
-    const settings = await settingsResponse.json();
-    if (!settings?.external?.google) {
-      throw new Error('Google auth is disabled in Auth Providers. Enable Google and retry.');
-    }
+      if (!nextSession?.user) {
+        resetAuthState();
+        setIsLoading(false);
+        return;
+      }
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-        skipBrowserRedirect: true,
-        queryParams: {
-          hd: ALLOWED_DOMAIN,
-        },
-      },
+      const domain = getEmailDomain(nextSession.user.email);
+      if (domain !== ALLOWED_DOMAIN) {
+        void supabase.auth.signOut();
+        resetAuthState();
+        setIsLoading(false);
+        return;
+      }
+
+      setSession(nextSession);
+      await checkMfaStatus();
+
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void handleSession(nextSession);
     });
 
-    if (error) {
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session: currentSession } }) => {
+        void handleSession(currentSession);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        resetAuthState();
+        setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [checkMfaStatus, resetAuthState]);
+
+  const signInWithGoogle = async () => {
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(() => abortController.abort(), SETTINGS_TIMEOUT_MS);
+
+    try {
+      const settingsResponse = await fetch(
+        `${SUPABASE_URL}/auth/v1/settings?apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`,
+        { signal: abortController.signal },
+      );
+
+      if (!settingsResponse.ok) {
+        throw new Error('Unable to validate Google auth settings.');
+      }
+
+      const settings = await settingsResponse.json();
+      if (!settings?.external?.google) {
+        throw new Error('Google auth is disabled in Auth Providers. Enable Google and retry.');
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
+          queryParams: {
+            hd: ALLOWED_DOMAIN,
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.url) {
+        throw new Error('Google auth URL was not generated.');
+      }
+
+      const oauthUrl = new URL(data.url);
+      if (!isAllowedOauthHost(oauthUrl.hostname)) {
+        throw new Error('Invalid OAuth redirect host.');
+      }
+
+      if (isEmbeddedApp()) {
+        const popup = window.open(data.url, 'touramigo-google-auth', 'popup,width=520,height=640');
+        if (!popup) {
+          throw new Error('Popup blocked. Allow popups or open the app in a new tab to sign in.');
+        }
+        popup.focus();
+        return;
+      }
+
+      window.location.assign(data.url);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('Google auth settings request timed out. Please retry.');
+      }
       throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
-
-    if (!data?.url) {
-      throw new Error('Google auth URL was not generated.');
-    }
-
-    const oauthUrl = new URL(data.url);
-    const isAllowedHost = oauthUrl.hostname === 'accounts.google.com' || oauthUrl.hostname.endsWith('.supabase.co');
-    if (!isAllowedHost) {
-      throw new Error('Invalid OAuth redirect host.');
-    }
-
-    window.location.assign(data.url);
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setSession(null);
-    setMfaVerified(false);
-    setMfaRequired(false);
+    resetAuthState();
   };
 
   const enrollMfa = async () => {
@@ -148,7 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       factorType: 'totp',
       friendlyName: 'TourAmigo Authenticator',
     });
+
     if (error) throw error;
+
     return {
       qr: data.totp.qr_code,
       secret: data.totp.secret,
@@ -187,18 +248,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{
-      session,
-      user: session?.user ?? null,
-      isLoading,
-      mfaVerified,
-      mfaRequired,
-      signInWithGoogle,
-      signOut,
-      verifyMfaOtp,
-      enrollMfa,
-      verifyMfaEnrollment,
-    }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        isLoading,
+        mfaVerified,
+        mfaRequired,
+        signInWithGoogle,
+        signOut,
+        verifyMfaOtp,
+        enrollMfa,
+        verifyMfaEnrollment,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
