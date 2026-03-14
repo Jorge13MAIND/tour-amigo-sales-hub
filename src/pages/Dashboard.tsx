@@ -10,6 +10,7 @@ import { StaleDealBanner } from '@/components/StaleDealBanner';
 import { AgentPulseWidget } from '@/components/widgets/AgentPulseWidget';
 import { FollowUpWidget } from '@/components/widgets/FollowUpWidget';
 import { OutreachWidget } from '@/components/widgets/OutreachWidget';
+import { NotificationWidget } from '@/components/widgets/NotificationWidget';
 import { AgentHealthWidget } from '@/components/widgets/AgentHealthWidget';
 import { DealRoomsWidget } from '@/components/widgets/DealRoomsWidget';
 import { formatCurrency } from '@/lib/format';
