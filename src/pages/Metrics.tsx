@@ -30,10 +30,10 @@ export default function Metrics() {
 
   if (isLoading) return <Skeleton className="h-96 rounded-lg" />;
 
-  if (!metrics || metrics.length < 7) {
+  if (!metrics || metrics.length < 2) {
     return (
       <div className="flex items-center justify-center h-64 rounded-lg border bg-card">
-        <p className="text-sm text-muted-foreground">Metrics will appear after 7 days of data collection.</p>
+        <p className="text-sm text-muted-foreground">Metrics will appear after 2 days of data collection.</p>
       </div>
     );
   }

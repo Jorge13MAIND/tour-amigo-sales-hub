@@ -34,7 +34,7 @@ export function AppSidebar() {
   const { data: atRiskCount } = useAtRiskCount(selectedPipeline);
   const { data: pendingDecisions } = usePendingDecisionCount();
   const { data: pendingApprovals } = usePendingApprovalCount();
-  const showMetrics = (metrics?.length || 0) >= 7;
+  const showMetrics = (metrics?.length || 0) >= 2;
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {

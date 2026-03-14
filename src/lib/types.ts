@@ -37,6 +37,11 @@ export interface DailyMetric {
   deals_by_stage: Record<string, number>;
   avg_days_to_close: number;
   win_rate: number;
+  prospects_found: number | null;
+  cold_emails_sent: number | null;
+  outreach_response_rate: number | null;
+  active_follow_up_plans: number | null;
+  agent_actions_today: number | null;
   created_at: string;
 }
 
@@ -76,7 +81,8 @@ export type AgentName =
   | 'inbound-processor'
   | 'outreach-engine'
   | 'improvement-scan'
-  | 'deal-monitor';
+  | 'deal-monitor'
+  | 'deal-room-sync';
 
 export type AgentResult = 'success' | 'auto_executed' | 'needs_approval' | 'failed' | 'skipped';
 
@@ -140,6 +146,7 @@ export const AGENT_CONFIG: Record<AgentName, { icon: string; color: string; labe
   'improvement-scan': { icon: 'BarChart', color: 'text-teal-500', label: 'Improvement Scan' },
   'deal-monitor': { icon: 'Search', color: 'text-slate-500', label: 'Deal Monitor' },
   'weekly-report': { icon: 'TrendingUp', color: 'text-indigo-500', label: 'Weekly Report' },
+  'deal-room-sync': { icon: 'Building2', color: 'text-cyan-500', label: 'Deal Room Sync' },
 };
 
 /** Agents that run weekly — use longer staleness threshold */
