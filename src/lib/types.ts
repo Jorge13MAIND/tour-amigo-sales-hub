@@ -83,6 +83,7 @@ export type AgentName =
   | 'improvement-scan'
   | 'deal-monitor'
   | 'deal-room-sync'
+  | 'outreach-eod'
   | 'command-center';
 
 export type AgentResult = 'success' | 'auto_executed' | 'needs_approval' | 'approved' | 'rejected' | 'failed' | 'skipped';
