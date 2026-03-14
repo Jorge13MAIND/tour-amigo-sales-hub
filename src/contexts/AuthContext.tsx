@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         setSession(nextSession);
-        void checkMfaStatus();
+        await checkMfaStatus();
         setIsLoading(false);
         return;
       }
