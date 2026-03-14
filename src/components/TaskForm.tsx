@@ -2,19 +2,20 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
 
-interface TaskFormProps {
+export interface TaskFormProps {
   dealId: number | null;
   onSubmit: (task: { deal_id: number | null; title: string; priority: string; due_date?: string }) => void;
+  onCancel?: () => void;
   isPending?: boolean;
+  isLoading?: boolean;
 }
 
-export function TaskForm({ dealId, onSubmit, isPending }: TaskFormProps) {
-  const [open, setOpen] = useState(false);
+export function TaskForm({ dealId, onSubmit, onCancel, isPending, isLoading }: TaskFormProps) {
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
+  const busy = isPending || isLoading;
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -22,16 +23,7 @@ export function TaskForm({ dealId, onSubmit, isPending }: TaskFormProps) {
     setTitle('');
     setPriority('medium');
     setDueDate('');
-    setOpen(false);
   };
-
-  if (!open) {
-    return (
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)} className="w-full rounded-lg text-xs">
-        <Plus className="h-3 w-3 mr-1.5" /> Add Task
-      </Button>
-    );
-  }
 
   return (
     <div className="space-y-2 rounded-lg border border-border p-3 bg-background">
@@ -62,9 +54,9 @@ export function TaskForm({ dealId, onSubmit, isPending }: TaskFormProps) {
         />
       </div>
       <div className="flex gap-2 justify-end">
-        <Button variant="ghost" size="sm" onClick={() => setOpen(false)} className="text-xs h-7">Cancel</Button>
-        <Button size="sm" onClick={handleSubmit} disabled={!title.trim() || isPending} className="text-xs h-7">
-          {isPending ? 'Creating...' : 'Create'}
+        {onCancel && <Button variant="ghost" size="sm" onClick={onCancel} className="text-xs h-7">Cancel</Button>}
+        <Button size="sm" onClick={handleSubmit} disabled={!title.trim() || busy} className="text-xs h-7">
+          {busy ? 'Creating...' : 'Create'}
         </Button>
       </div>
     </div>

@@ -3,13 +3,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
 
-interface AddNoteFormProps {
+export interface AddNoteFormProps {
   onSubmit: (content: string) => void;
   isPending?: boolean;
+  isLoading?: boolean;
 }
 
-export function AddNoteForm({ onSubmit, isPending }: AddNoteFormProps) {
+export function AddNoteForm({ onSubmit, isPending, isLoading }: AddNoteFormProps) {
   const [content, setContent] = useState('');
+  const busy = isPending || isLoading;
 
   const handleSubmit = () => {
     if (!content.trim()) return;
@@ -32,11 +34,11 @@ export function AddNoteForm({ onSubmit, isPending }: AddNoteFormProps) {
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={!content.trim() || isPending}
+          disabled={!content.trim() || busy}
           className="rounded-lg text-xs"
         >
           <Send className="h-3 w-3 mr-1.5" />
-          {isPending ? 'Saving...' : 'Add Note'}
+          {busy ? 'Saving...' : 'Add Note'}
         </Button>
       </div>
     </div>

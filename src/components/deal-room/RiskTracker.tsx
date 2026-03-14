@@ -1,5 +1,7 @@
 import type { DealRisk } from '@/lib/types';
 import { AlertTriangle } from 'lucide-react';
+import { useUpdateDealRoom } from '@/hooks/useDealMutations';
+import { Button } from '@/components/ui/button';
 
 const SEVERITY_STYLES: Record<string, { dot: string; label: string; border: string }> = {
   critical: { dot: '🔴', label: 'CRITICAL', border: 'border-l-red-500' },
@@ -14,13 +16,28 @@ const STATUS_STYLES: Record<string, string> = {
   escalated: 'bg-destructive text-destructive-foreground',
 };
 
+const STATUS_CYCLE: Record<string, string> = {
+  open: 'mitigated',
+  mitigated: 'escalated',
+  escalated: 'open',
+};
+
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 interface Props {
   risks: DealRisk[];
+  roomId?: string;
 }
 
-export function RiskTracker({ risks }: Props) {
+export function RiskTracker({ risks, roomId }: Props) {
+  const updateRoom = useUpdateDealRoom();
+
+  const toggleStatus = (index: number) => {
+    if (!roomId) return;
+    const updated = risks.map((r, i) => i === index ? { ...r, status: STATUS_CYCLE[r.status] || 'open' } : r) as DealRisk[];
+    updateRoom.mutate({ room_id: roomId, fields: { risks: updated } });
+  };
+
   if (!risks.length) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -31,7 +48,7 @@ export function RiskTracker({ risks }: Props) {
     );
   }
 
-  const sorted = [...risks].sort((a, b) => {
+  const sorted = [...risks].map((r, origIdx) => ({ ...r, _idx: origIdx })).sort((a, b) => {
     const statusDiff = (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1);
     if (statusDiff !== 0) return statusDiff;
     return (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9);
@@ -50,18 +67,29 @@ export function RiskTracker({ risks }: Props) {
       </div>
 
       <div className="space-y-3">
-        {sorted.map((risk, i) => {
+        {sorted.map((risk) => {
           const sev = SEVERITY_STYLES[risk.severity] || SEVERITY_STYLES.medium;
           return (
-            <div key={i} className={`rounded-xl border border-border bg-card p-4 border-l-4 ${sev.border} space-y-2`}>
+            <div key={risk._idx} className={`rounded-xl border border-border bg-card p-4 border-l-4 ${sev.border} space-y-2`}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span>{sev.dot}</span>
                   <span className="text-xs font-bold text-muted-foreground">{sev.label}</span>
                 </div>
-                <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 uppercase ${STATUS_STYLES[risk.status] || ''}`}>
-                  {risk.status}
-                </span>
+                {roomId ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 px-2 text-[10px] font-bold uppercase rounded-full ${STATUS_STYLES[risk.status] || ''}`}
+                    onClick={() => toggleStatus(risk._idx)}
+                  >
+                    {risk.status} →
+                  </Button>
+                ) : (
+                  <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 uppercase ${STATUS_STYLES[risk.status] || ''}`}>
+                    {risk.status}
+                  </span>
+                )}
               </div>
               <p className="text-sm font-semibold text-foreground">{risk.risk}</p>
               {risk.mitigation && <p className="text-sm text-muted-foreground">{risk.mitigation}</p>}
