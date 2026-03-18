@@ -1,4 +1,4 @@
-import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target, LogOut } from 'lucide-react';
+import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun as SunIcon, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target, LogOut, Sunrise } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
 import { useAtRiskCount } from '@/hooks/useDeals';
@@ -44,6 +44,7 @@ export function AppSidebar() {
   }, [isDark]);
 
   const mainItems: NavItem[] = [
+    { title: 'Morning Brief', url: '/brief', icon: Sunrise, badge: 0, badgeColor: '' },
     { title: 'Dashboard', url: '/', icon: LayoutGrid, badge: 0, badgeColor: '' },
     { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
     { title: 'Deal Rooms', url: '/deal-rooms', icon: Building2, badge: 0, badgeColor: '' },
@@ -145,7 +146,7 @@ export function AppSidebar() {
             onClick={() => setIsDark(!isDark)}
             className="flex items-center gap-2.5 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors w-full px-3 py-2 rounded-lg hover:bg-sidebar-accent"
           >
-            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDark ? <SunIcon className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             {!collapsed && <span>{isDark ? 'Light mode' : 'Dark mode'}</span>}
           </button>
           <button

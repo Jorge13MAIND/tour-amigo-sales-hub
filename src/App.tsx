@@ -13,7 +13,6 @@ import Dashboard from "./pages/Dashboard";
 import Pipeline from "./pages/Pipeline";
 import Decisions from "./pages/Decisions";
 import Login from "./pages/Login";
-import MfaSetup from "./pages/MfaSetup";
 import NotFound from "./pages/NotFound";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,13 +26,14 @@ const Improvements = lazy(() => import("./pages/Improvements"));
 const DealRoomList = lazy(() => import("./pages/DealRoomList"));
 const DealRoom = lazy(() => import("./pages/DealRoom"));
 const Outreach = lazy(() => import("./pages/Outreach"));
+const MorningBrief = lazy(() => import("./pages/MorningBrief"));
 
 const queryClient = new QueryClient();
 
 const LazyFallback = () => <Skeleton className="h-96 rounded-xl" />;
 
 function AuthGate() {
-  const { session, isLoading, mfaVerified, mfaRequired } = useAuth();
+  const { session, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -45,10 +45,6 @@ function AuthGate() {
 
   if (!session) {
     return <Login />;
-  }
-
-  if (mfaRequired && !mfaVerified) {
-    return <MfaSetup />;
   }
 
   return (
@@ -76,6 +72,7 @@ function AppRoutes() {
         <Route path="/deal-rooms" element={<Suspense fallback={<LazyFallback />}><DealRoomList /></Suspense>} />
         <Route path="/deal-rooms/:id" element={<Suspense fallback={<LazyFallback />}><DealRoom /></Suspense>} />
         <Route path="/outreach" element={<Suspense fallback={<LazyFallback />}><Outreach /></Suspense>} />
+        <Route path="/brief" element={<Suspense fallback={<LazyFallback />}><MorningBrief /></Suspense>} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
