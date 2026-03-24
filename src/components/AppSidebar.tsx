@@ -44,23 +44,19 @@ export function AppSidebar() {
   }, [isDark]);
 
   const mainItems: NavItem[] = [
-    { title: 'Morning Brief', url: '/', icon: Sunrise, badge: 0, badgeColor: '' },
-    { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid, badge: 0, badgeColor: '' },
+    { title: 'Brief', url: '/', icon: Sunrise, badge: 0, badgeColor: '' },
     { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
     { title: 'Deal Rooms', url: '/deal-rooms', icon: Building2, badge: 0, badgeColor: '' },
   ];
 
   const atlasItems: NavItem[] = [
-    { title: 'Agent Feed', url: '/agents', icon: Bot, badge: 0, badgeColor: '' },
-    { title: 'Outreach', url: '/outreach', icon: Target, badge: 0, badgeColor: '' },
-    { title: 'Follow-Ups', url: '/follow-ups', icon: Route, badge: 0, badgeColor: '' },
+    { title: 'Agents', url: '/agents', icon: Bot, badge: 0, badgeColor: '' },
     { title: 'Approvals', url: '/approvals', icon: ShieldCheck, badge: pendingApprovals || 0, badgeColor: 'bg-risk-medium text-white' },
-    { title: 'Improvements', url: '/improvements', icon: Lightbulb, badge: 0, badgeColor: '' },
   ];
 
   const analyticsItems: NavItem[] = [
+    { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid, badge: 0, badgeColor: '' },
     ...(showMetrics ? [{ title: 'Metrics', url: '/metrics', icon: TrendingUp, badge: 0, badgeColor: '' }] : []),
-    { title: 'Decisions', url: '/decisions', icon: ClipboardCheck, badge: pendingDecisions || 0, badgeColor: 'bg-risk-medium text-white' },
   ];
 
   const renderItems = (items: NavItem[]) =>
@@ -115,7 +111,7 @@ export function AppSidebar() {
         <SidebarGroup>
           {!collapsed && (
             <p className="px-5 pt-4 pb-1 text-[10px] text-sidebar-foreground/40 uppercase tracking-[0.15em] font-semibold">
-              ATLAS Engine
+              ATLAS
             </p>
           )}
           <SidebarGroupContent>

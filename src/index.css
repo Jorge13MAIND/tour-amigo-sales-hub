@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    /* Tour Amigo light theme — clean, professional SaaS */
-    --background: 210 40% 96%;
-    --foreground: 228 60% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 228 60% 15%;
+    /* Tour Amigo light theme — warm, trustworthy, premium */
+    --background: 40 30% 97%;
+    --foreground: 228 50% 15%;
+    --card: 40 20% 100%;
+    --card-foreground: 228 50% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 228 60% 15%;
+    --popover-foreground: 228 50% 15%;
     --primary: 340 97% 44%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 30% 92%;
-    --secondary-foreground: 228 60% 15%;
-    --muted: 210 25% 93%;
-    --muted-foreground: 220 10% 46%;
-    --accent: 210 60% 95%;
-    --accent-foreground: 228 60% 15%;
+    --secondary: 35 20% 93%;
+    --secondary-foreground: 228 50% 15%;
+    --muted: 35 15% 94%;
+    --muted-foreground: 220 10% 44%;
+    --accent: 35 30% 95%;
+    --accent-foreground: 228 50% 15%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
+    --border: 35 15% 88%;
+    --input: 35 15% 88%;
     --ring: 340 97% 44%;
     --radius: 0.75rem;
 
