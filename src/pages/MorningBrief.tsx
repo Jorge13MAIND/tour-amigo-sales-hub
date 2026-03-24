@@ -7,7 +7,6 @@ import { formatCurrency, relativeTime } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
-  Search,
   CheckCircle2,
   Users,
   Clock,
@@ -17,7 +16,6 @@ import {
   X,
   Calendar,
   CircleDot,
-  Shield,
   FileText,
   Sparkles,
 } from 'lucide-react';
