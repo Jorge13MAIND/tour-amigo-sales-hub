@@ -5,163 +5,166 @@ import { useMarkNotificationRead, useMarkAllRead } from '@/hooks/useNotification
 import { useAppContext } from '@/contexts/AppContext';
 import { formatCurrency, relativeTime } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
-  Zap,
-  AlertTriangle,
+  Search,
   CheckCircle2,
   Users,
-  Mail,
-  Calendar,
   Clock,
-  ArrowRight,
-  DollarSign,
-  CircleDot,
-  FileText,
+  ChevronRight,
   Send,
   Pencil,
   X,
-  ChevronRight,
-  TrendingUp,
+  Calendar,
+  CircleDot,
   Shield,
-  Eye,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 import type { AtlasNotification } from '@/lib/types';
 
-/* ── Priority config (icons only, no emojis) ── */
-const PRIORITY_CONFIG = {
-  critical: { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-900', dot: 'bg-red-500', label: 'Now' },
-  high: { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-900', dot: 'bg-amber-500', label: 'Today' },
-  normal: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-900', dot: 'bg-blue-500', label: 'This week' },
-  low: { color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-950/30', border: 'border-slate-200 dark:border-slate-800', dot: 'bg-slate-400', label: 'FYI' },
-} as const;
-
-/* ── Stat Pill ── */
-function StatPill({ value, label, color }: { value: string | number; label: string; color: string }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border">
-      <div className={cn('w-2 h-2 rounded-full', color)} />
-      <div>
-        <div className="text-lg font-semibold tracking-tight leading-none">{value}</div>
-        <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Focus Card (critical/high actions) ── */
+/* ── Apple-style Focus Card ── */
 function FocusCard({ notification, index }: { notification: AtlasNotification; index: number }) {
   const markRead = useMarkNotificationRead();
-  const priority = (notification.priority as keyof typeof PRIORITY_CONFIG) || 'normal';
-  const config = PRIORITY_CONFIG[priority];
+  const priority = notification.priority || 'normal';
   const meta = notification.metadata || {};
   const dealName = meta.deal_name as string | undefined;
   const contact = meta.contact as string | undefined;
   const competitor = meta.competitor as string | undefined;
   const action = meta.action as string | undefined;
 
-  // Clean title: remove leading emoji patterns
   const cleanTitle = notification.title.replace(/^[^\w\s]*\s*(?:ACTION \d+:\s*)?/i, '');
 
+  const gradientClass = priority === 'critical'
+    ? 'from-red-500 to-orange-500'
+    : priority === 'high'
+    ? 'from-amber-500 to-yellow-400'
+    : 'from-blue-500 to-cyan-400';
+
+  const tagClass = priority === 'critical'
+    ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+    : priority === 'high'
+    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+
   return (
-    <div className={cn(
-      'rounded-2xl border p-6 transition-all hover:shadow-lg',
-      config.bg, config.border,
-      notification.read && 'opacity-60'
-    )}>
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white', config.dot)}>
-            {index + 1}
-          </div>
-          <span className={cn('text-xs font-semibold uppercase tracking-wider', config.color)}>{config.label}</span>
-          {action && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              {action.replace(/_/g, ' ')}
+    <div
+      className={cn(
+        'relative bg-card rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer',
+        'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
+        'hover:shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]',
+        'hover:-translate-y-[1px]',
+        notification.read && 'opacity-50'
+      )}
+    >
+      {/* Gradient top bar */}
+      <div className={cn('h-[3px] w-full bg-gradient-to-r', gradientClass)} />
+
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className={cn('text-[11px] font-semibold px-2.5 py-1 rounded-full', tagClass)}>
+              {priority === 'critical' ? 'Critical' : priority === 'high' ? 'High' : 'Normal'}
             </span>
+            {action && (
+              <span className="text-[11px] text-muted-foreground font-medium">
+                {action.replace(/_/g, ' ')}
+              </span>
+            )}
+          </div>
+          {!notification.read && (
+            <button
+              className="text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              onClick={(e) => { e.stopPropagation(); markRead.mutate(notification.id); }}
+            >
+              <X className="h-4 w-4" />
+            </button>
           )}
         </div>
-        {!notification.read && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => markRead.mutate(notification.id)}
-          >
-            <X className="h-3 w-3 mr-1" /> Dismiss
-          </Button>
-        )}
-      </div>
 
-      {/* Title */}
-      <h3 className="text-[15px] font-semibold text-foreground leading-snug mb-2">{cleanTitle}</h3>
+        {/* Title — large Apple style */}
+        <h3 className="text-[19px] font-bold tracking-tight leading-snug mb-1">{cleanTitle}</h3>
 
-      {/* Body */}
-      {notification.body && (
-        <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">{notification.body}</p>
-      )}
-
-      {/* Deal context bar */}
-      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+        {/* Deal link */}
         {dealName && (
-          <span className="flex items-center gap-1">
-            <CircleDot className="h-3 w-3" /> {dealName}
-          </span>
+          <p className="text-[14px] font-medium text-primary mb-2.5">
+            {dealName}
+            {competitor && <span className="text-muted-foreground font-normal"> vs {competitor}</span>}
+          </p>
         )}
-        {contact && (
-          <span className="flex items-center gap-1">
-            <Users className="h-3 w-3" /> {contact}
-          </span>
-        )}
-        {competitor && (
-          <span className="flex items-center gap-1 text-red-500">
-            <Shield className="h-3 w-3" /> vs {competitor}
-          </span>
-        )}
-      </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dashed">
-        {(action === 'reply_email' || action === 'send_follow_up' || action === 'follow_up') && (
-          <>
-            <Button size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
-              <Send className="h-3 w-3" /> View Draft
-            </Button>
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
-              <Pencil className="h-3 w-3" /> Edit
-            </Button>
-          </>
+        {/* Context */}
+        {notification.body && (
+          <p className="text-[14px] text-muted-foreground leading-relaxed">{notification.body}</p>
         )}
-        {action === 'schedule_demo' && (
-          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
-            <Calendar className="h-3 w-3" /> Send Meeting Link
-          </Button>
+
+        {/* Draft preview (inline) */}
+        {(action === 'reply_email' || action === 'send_follow_up') && (
+          <div className="mt-4 bg-muted/50 rounded-xl p-4">
+            <p className="text-[12px] text-muted-foreground/60 mb-0.5">
+              To: {contact || 'Contact'}
+            </p>
+            <p className="text-[13px] font-semibold text-foreground mb-2">
+              RE: Tour Amigo {dealName ? `for ${dealName}` : ''}
+            </p>
+            <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+              Draft ready for review. Click View Draft to see full email.
+            </p>
+          </div>
         )}
-        {action === 'prep_training' && (
-          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
-            <FileText className="h-3 w-3" /> Open Deal Room
-          </Button>
-        )}
-        {!notification.read && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs gap-1.5 rounded-xl ml-auto"
-            onClick={() => markRead.mutate(notification.id)}
-          >
-            <CheckCircle2 className="h-3 w-3" /> Done
-          </Button>
-        )}
+
+        {/* Footer: meta + actions */}
+        <div className="flex items-center justify-between mt-5">
+          <div className="flex items-center gap-3 text-[12px] text-muted-foreground/60">
+            {contact && (
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" /> {contact}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <CircleDot className="h-3 w-3" /> Live data
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {(action === 'reply_email' || action === 'send_follow_up' || action === 'follow_up') && (
+              <>
+                <button className="px-4 py-2 rounded-full text-[13px] font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                  <Send className="h-3.5 w-3.5" /> View Draft
+                </button>
+                <button className="px-4 py-2 rounded-full text-[13px] font-semibold bg-muted text-foreground hover:bg-muted/80 transition-colors flex items-center gap-1.5">
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </button>
+              </>
+            )}
+            {action === 'schedule_demo' && (
+              <button className="px-4 py-2 rounded-full text-[13px] font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" /> Send Link
+              </button>
+            )}
+            {action === 'prep_training' && (
+              <button className="px-4 py-2 rounded-full text-[13px] font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" /> Deal Room
+              </button>
+            )}
+            {!notification.read && (
+              <button
+                className="px-4 py-2 rounded-full text-[13px] font-medium text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1.5"
+                onClick={(e) => { e.stopPropagation(); markRead.mutate(notification.id); }}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Done
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-/* ── Alert Row (compact) ── */
-function AlertRow({ notification }: { notification: AtlasNotification }) {
+/* ── Intel Card (for alerts — Apple Card style) ── */
+function IntelCard({ notification }: { notification: AtlasNotification }) {
   const meta = notification.metadata || {};
   const daysStale = meta.days_stale as number | undefined;
   const contact = meta.contact as string | undefined;
@@ -169,40 +172,49 @@ function AlertRow({ notification }: { notification: AtlasNotification }) {
   const cleanTitle = notification.title.replace(/^[^\w\s]*\s*/, '');
 
   return (
-    <div className="flex items-center gap-4 py-3 border-b last:border-0">
-      <AlertTriangle className={cn(
-        'h-4 w-4 shrink-0',
-        risk === 'high' ? 'text-red-500' : 'text-amber-500'
-      )} />
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-foreground truncate">{cleanTitle}</p>
-        {notification.body && (
-          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{notification.body}</p>
-        )}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
+    <div className={cn(
+      'bg-card rounded-2xl p-5 transition-all duration-200 cursor-pointer',
+      'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
+      'hover:shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]',
+      'hover:-translate-y-[1px]',
+    )}>
+      <h4 className="text-[14px] font-bold tracking-tight leading-snug mb-1.5">{cleanTitle}</h4>
+      {notification.body && (
+        <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">{notification.body}</p>
+      )}
+      <div className="flex items-center gap-3 mt-3 text-[11px] text-muted-foreground/60">
         {daysStale && (
-          <span className="text-[10px] text-red-500 font-medium flex items-center gap-1">
-            <Clock className="h-3 w-3" /> {daysStale}d
+          <span className={cn('flex items-center gap-1 font-medium', risk === 'high' ? 'text-red-500' : 'text-amber-500')}>
+            <Clock className="h-3 w-3" /> {daysStale} days
           </span>
         )}
         {contact && (
-          <span className="text-[10px] text-muted-foreground">{contact.split(',')[0]}</span>
+          <span className="flex items-center gap-1">
+            <Users className="h-3 w-3" /> {contact.split(',')[0]}
+          </span>
         )}
-        <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
       </div>
     </div>
   );
 }
 
-/* ── Info Row (minimal) ── */
-function InfoRow({ notification }: { notification: AtlasNotification }) {
+/* ── Quick Item (for info/updates) ── */
+function QuickItem({ notification }: { notification: AtlasNotification }) {
   const cleanTitle = notification.title.replace(/^[^\w\s]*\s*/, '');
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b last:border-0">
-      <Eye className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-      <p className="text-[12px] text-muted-foreground flex-1">{cleanTitle}</p>
-      <span className="text-[10px] text-muted-foreground/50">{relativeTime(notification.created_at)}</span>
+    <div className={cn(
+      'flex items-center justify-between bg-card rounded-xl px-5 py-3.5 cursor-pointer transition-all duration-200',
+      'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
+      'hover:shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]',
+    )}>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+        <p className="text-[13px] text-foreground truncate">{cleanTitle}</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-[11px] text-muted-foreground/50">{relativeTime(notification.created_at)}</span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+      </div>
     </div>
   );
 }
@@ -210,20 +222,20 @@ function InfoRow({ notification }: { notification: AtlasNotification }) {
 /* ── Main Page ── */
 export default function MorningBrief() {
   const { data: brief, isLoading: briefLoading } = useMorningBrief();
-  const { selectedPipeline } = useAppContext();
+  const { selectedPipeline, setIsChatOpen } = useAppContext();
   const { data: deals } = useDeals(selectedPipeline);
   const { data: tasks } = useTodaysTasks();
   const markAllRead = useMarkAllRead();
 
   if (briefLoading) {
     return (
-      <div className="space-y-4 max-w-[860px] mx-auto">
+      <div className="space-y-4 max-w-[960px] mx-auto">
         <Skeleton className="h-16 rounded-2xl" />
         <div className="grid grid-cols-4 gap-3">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-[72px] rounded-2xl" />)}
         </div>
-        <Skeleton className="h-40 rounded-2xl" />
-        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-48 rounded-2xl" />
       </div>
     );
   }
@@ -239,68 +251,70 @@ export default function MorningBrief() {
   const today = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const dateStr = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}`;
+  const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="max-w-[860px] mx-auto space-y-6">
+    <div className="max-w-[960px] mx-auto">
 
-      {/* ── Date Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{dateStr}</h1>
+      {/* ── Hero Greeting ── */}
+      <div className="pt-4 pb-6">
+        <h1 className="text-[32px] font-bold tracking-tight leading-none">{greeting}, Jorge.</h1>
+        <p className="text-[17px] text-muted-foreground mt-1.5">
+          {dayNames[today.getDay()]}, {monthNames[today.getMonth()]} {today.getDate()}
           {brief?.header && (
-            <p className="text-[12px] text-muted-foreground mt-1">
-              Scanned {relativeTime(brief.header.created_at)} — HubSpot, Gmail, Calendar, Supabase
-            </p>
+            <span className="text-muted-foreground/50"> — scanned {relativeTime(brief.header.created_at)}</span>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          {brief?.header && (
-            <Badge variant="outline" className="text-emerald-600 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 text-[11px] gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Live
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs h-7"
-            onClick={() => markAllRead.mutate()}
-          >
-            Clear all
-          </Button>
-        </div>
+        </p>
+      </div>
+
+      {/* ── Spotlight Command Bar ── */}
+      <div
+        className={cn(
+          'bg-card border rounded-[14px] px-5 py-3.5 flex items-center gap-3 mb-8 cursor-pointer',
+          'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]',
+          'hover:shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]',
+          'transition-all duration-200',
+        )}
+        onClick={() => setIsChatOpen(true)}
+      >
+        <Sparkles className="h-[18px] w-[18px] text-muted-foreground/40" />
+        <span className="text-[16px] text-muted-foreground/40 flex-1">Ask Atlas anything...</span>
+        <span className="text-[12px] text-muted-foreground/30 bg-muted px-2 py-0.5 rounded-md font-medium">
+          Cmd+K
+        </span>
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatPill value={formatCurrency(totalValue)} label="Pipeline" color="bg-blue-500" />
-        <StatPill value={meetingsToday} label="Meetings today" color="bg-violet-500" />
-        <StatPill value={allDeals.length} label="Active deals" color="bg-emerald-500" />
-        <StatPill value={atRisk || pendingTasks} label="Needs attention" color="bg-amber-500" />
+      <div className="flex gap-3 mb-9 overflow-x-auto pb-1">
+        {[
+          { value: formatCurrency(totalValue), label: 'Pipeline', color: 'bg-blue-500' },
+          { value: meetingsToday, label: 'Meetings today', color: 'bg-violet-500' },
+          { value: allDeals.length, label: 'Active deals', color: 'bg-emerald-500' },
+          { value: atRisk + pendingTasks, label: 'Needs attention', color: 'bg-amber-500' },
+        ].map((stat) => (
+          <div key={stat.label} className="flex items-center gap-2.5 bg-card rounded-[14px] px-5 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] shrink-0">
+            <div className={cn('w-2.5 h-2.5 rounded-full', stat.color)} />
+            <div>
+              <div className="text-[20px] font-bold tracking-tight leading-none">{stat.value}</div>
+              <div className="text-[12px] text-muted-foreground mt-0.5">{stat.label}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ── No brief warning ── */}
       {noBrief && (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-5">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <div>
-              <p className="text-sm font-medium text-foreground">No brief generated today</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Run the morning command from Claude to generate one, or wait for the 8am automated scan.</p>
-            </div>
-          </div>
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 mb-8">
+          <p className="text-[14px] font-medium text-foreground">No brief generated today</p>
+          <p className="text-[13px] text-muted-foreground mt-1">Run the morning command from Claude or wait for the 8am automated scan.</p>
         </div>
       )}
 
-      {/* ── Focus: Critical & High Actions ── */}
+      {/* ── FOCUS: Now ── */}
       {(brief?.actions?.length ?? 0) > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="h-4 w-4 text-foreground" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Focus</h2>
-            <Badge variant="secondary" className="text-[10px] ml-1">{brief!.actions.length}</Badge>
-          </div>
-          <div className="space-y-3">
+        <section className="mb-10">
+          <h2 className="text-[22px] font-bold tracking-tight mb-4">Now</h2>
+          <div className="space-y-4">
             {brief!.actions.map((a, i) => (
               <FocusCard key={a.id} notification={a} index={i} />
             ))}
@@ -308,31 +322,33 @@ export default function MorningBrief() {
         </section>
       )}
 
-      {/* ── Alerts ── */}
+      {/* ── INTEL: Alerts as grid ── */}
       {(brief?.dealAlerts?.length ?? 0) > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-foreground" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Alerts</h2>
-          </div>
-          <div className="rounded-2xl border bg-card px-5">
+        <section className="mb-10">
+          <h2 className="text-[22px] font-bold tracking-tight mb-4">Intel</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {brief!.dealAlerts.map((a) => (
-              <AlertRow key={a.id} notification={a} />
+              <IntelCard key={a.id} notification={a} />
             ))}
           </div>
         </section>
       )}
 
-      {/* ── Updates ── */}
+      {/* ── UPDATES: Quick list ── */}
       {(brief?.infoItems?.length ?? 0) > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Updates</h2>
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[22px] font-bold tracking-tight">Updates</h2>
+            <button
+              className="text-[13px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              onClick={() => markAllRead.mutate()}
+            >
+              Clear all
+            </button>
           </div>
-          <div className="rounded-2xl border bg-card px-5">
+          <div className="space-y-2">
             {brief!.infoItems.map((a) => (
-              <InfoRow key={a.id} notification={a} />
+              <QuickItem key={a.id} notification={a} />
             ))}
           </div>
         </section>
@@ -340,9 +356,9 @@ export default function MorningBrief() {
 
       {/* ── Scan footer ── */}
       {brief?.agentScan && (
-        <div className="text-center py-4">
-          <p className="text-[11px] text-muted-foreground/50">
-            ATLAS scan — {brief.agentScan.description} — {relativeTime(brief.agentScan.created_at)}
+        <div className="text-center py-8">
+          <p className="text-[11px] text-muted-foreground/30 tracking-wide">
+            ATLAS v3.0 — {relativeTime(brief.agentScan.created_at)}
           </p>
         </div>
       )}
