@@ -1,113 +1,158 @@
 import { useMorningBrief } from '@/hooks/useMorningBrief';
 import { useDeals } from '@/hooks/useDeals';
 import { useTodaysTasks } from '@/hooks/useTasks';
-import { useMarkNotificationRead } from '@/hooks/useNotifications';
+import { useMarkNotificationRead, useMarkAllRead } from '@/hooks/useNotifications';
 import { useAppContext } from '@/contexts/AppContext';
-import { MetricCard } from '@/components/MetricCard';
-import { formatCurrency, formatDate, relativeTime } from '@/lib/format';
+import { formatCurrency, relativeTime } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
-  Sun,
   Zap,
   AlertTriangle,
-  Info,
   CheckCircle2,
-  ExternalLink,
-  BarChart3,
   Users,
   Mail,
   Calendar,
-  Target,
   Clock,
   ArrowRight,
   DollarSign,
-  Activity,
+  CircleDot,
+  FileText,
+  Send,
+  Pencil,
+  X,
+  ChevronRight,
+  TrendingUp,
   Shield,
+  Eye,
 } from 'lucide-react';
 import type { AtlasNotification } from '@/lib/types';
 
-const PRIORITY_STYLES: Record<string, { border: string; bg: string; icon: React.ReactNode; label: string }> = {
-  critical: {
-    border: 'border-l-destructive',
-    bg: 'bg-destructive/5',
-    icon: <Zap className="h-4 w-4 text-destructive" />,
-    label: 'CRITICAL',
-  },
-  high: {
-    border: 'border-l-orange-500',
-    bg: 'bg-orange-500/5',
-    icon: <AlertTriangle className="h-4 w-4 text-orange-500" />,
-    label: 'HIGH',
-  },
-  normal: {
-    border: 'border-l-blue-500',
-    bg: 'bg-blue-500/5',
-    icon: <Info className="h-4 w-4 text-blue-500" />,
-    label: 'NORMAL',
-  },
-  low: {
-    border: 'border-l-muted-foreground/30',
-    bg: 'bg-muted/30',
-    icon: <Info className="h-4 w-4 text-muted-foreground" />,
-    label: 'FYI',
-  },
-};
+/* ── Priority config (icons only, no emojis) ── */
+const PRIORITY_CONFIG = {
+  critical: { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-900', dot: 'bg-red-500', label: 'Now' },
+  high: { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-900', dot: 'bg-amber-500', label: 'Today' },
+  normal: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-900', dot: 'bg-blue-500', label: 'This week' },
+  low: { color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-950/30', border: 'border-slate-200 dark:border-slate-800', dot: 'bg-slate-400', label: 'FYI' },
+} as const;
 
-function ActionCard({ notification, index }: { notification: AtlasNotification; index: number }) {
+/* ── Stat Pill ── */
+function StatPill({ value, label, color }: { value: string | number; label: string; color: string }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border">
+      <div className={cn('w-2 h-2 rounded-full', color)} />
+      <div>
+        <div className="text-lg font-semibold tracking-tight leading-none">{value}</div>
+        <div className="text-[11px] text-muted-foreground mt-0.5">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Focus Card (critical/high actions) ── */
+function FocusCard({ notification, index }: { notification: AtlasNotification; index: number }) {
   const markRead = useMarkNotificationRead();
-  const style = PRIORITY_STYLES[notification.priority] || PRIORITY_STYLES.normal;
+  const priority = (notification.priority as keyof typeof PRIORITY_CONFIG) || 'normal';
+  const config = PRIORITY_CONFIG[priority];
   const meta = notification.metadata || {};
   const dealName = meta.deal_name as string | undefined;
   const contact = meta.contact as string | undefined;
+  const competitor = meta.competitor as string | undefined;
   const action = meta.action as string | undefined;
 
+  // Clean title: remove leading emoji patterns
+  const cleanTitle = notification.title.replace(/^[^\w\s]*\s*(?:ACTION \d+:\s*)?/i, '');
+
   return (
-    <div
-      className={cn(
-        'rounded-xl border-l-4 border bg-card p-5 shadow-sm hover:shadow-md transition-all',
-        style.border,
-        !notification.read && style.bg
-      )}
-    >
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-lg">
-          {index + 1}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            {style.icon}
-            <Badge variant="outline" className="text-[10px]">{style.label}</Badge>
-            {dealName && <Badge variant="secondary" className="text-[10px]">{dealName}</Badge>}
+    <div className={cn(
+      'rounded-2xl border p-6 transition-all hover:shadow-lg',
+      config.bg, config.border,
+      notification.read && 'opacity-60'
+    )}>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white', config.dot)}>
+            {index + 1}
           </div>
-          <h3 className="text-sm font-semibold text-foreground leading-snug">{notification.title.replace(/^[^\s]+\s/, '')}</h3>
-          {notification.body && (
-            <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{notification.body}</p>
+          <span className={cn('text-xs font-semibold uppercase tracking-wider', config.color)}>{config.label}</span>
+          {action && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {action.replace(/_/g, ' ')}
+            </span>
           )}
-          <div className="flex items-center gap-3 mt-3">
-            {contact && (
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <Users className="h-3 w-3" /> {contact}
-              </span>
-            )}
-            {action && (
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <ArrowRight className="h-3 w-3" /> {action.replace(/_/g, ' ')}
-              </span>
-            )}
-          </div>
         </div>
         {!notification.read && (
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs h-7 shrink-0"
+            className="h-7 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => markRead.mutate(notification.id)}
           >
-            <CheckCircle2 className="h-3 w-3 mr-1" /> Done
+            <X className="h-3 w-3 mr-1" /> Dismiss
+          </Button>
+        )}
+      </div>
+
+      {/* Title */}
+      <h3 className="text-[15px] font-semibold text-foreground leading-snug mb-2">{cleanTitle}</h3>
+
+      {/* Body */}
+      {notification.body && (
+        <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">{notification.body}</p>
+      )}
+
+      {/* Deal context bar */}
+      <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+        {dealName && (
+          <span className="flex items-center gap-1">
+            <CircleDot className="h-3 w-3" /> {dealName}
+          </span>
+        )}
+        {contact && (
+          <span className="flex items-center gap-1">
+            <Users className="h-3 w-3" /> {contact}
+          </span>
+        )}
+        {competitor && (
+          <span className="flex items-center gap-1 text-red-500">
+            <Shield className="h-3 w-3" /> vs {competitor}
+          </span>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dashed">
+        {(action === 'reply_email' || action === 'send_follow_up' || action === 'follow_up') && (
+          <>
+            <Button size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
+              <Send className="h-3 w-3" /> View Draft
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
+              <Pencil className="h-3 w-3" /> Edit
+            </Button>
+          </>
+        )}
+        {action === 'schedule_demo' && (
+          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
+            <Calendar className="h-3 w-3" /> Send Meeting Link
+          </Button>
+        )}
+        {action === 'prep_training' && (
+          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-xl">
+            <FileText className="h-3 w-3" /> Open Deal Room
+          </Button>
+        )}
+        {!notification.read && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs gap-1.5 rounded-xl ml-auto"
+            onClick={() => markRead.mutate(notification.id)}
+          >
+            <CheckCircle2 className="h-3 w-3" /> Done
           </Button>
         )}
       </div>
@@ -115,96 +160,70 @@ function ActionCard({ notification, index }: { notification: AtlasNotification; 
   );
 }
 
-function AlertCard({ notification }: { notification: AtlasNotification }) {
-  const style = PRIORITY_STYLES[notification.priority] || PRIORITY_STYLES.normal;
+/* ── Alert Row (compact) ── */
+function AlertRow({ notification }: { notification: AtlasNotification }) {
   const meta = notification.metadata || {};
   const daysStale = meta.days_stale as number | undefined;
-  const risk = meta.risk as string | undefined;
   const contact = meta.contact as string | undefined;
+  const risk = meta.risk as string | undefined;
+  const cleanTitle = notification.title.replace(/^[^\w\s]*\s*/, '');
 
   return (
-    <div className={cn('rounded-lg border p-4 border-l-4', style.border)}>
-      <div className="flex items-start gap-3">
-        {style.icon}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground">{notification.title.replace(/^[^\s]+\s/, '')}</p>
-          {notification.body && (
-            <p className="text-xs text-muted-foreground mt-1">{notification.body}</p>
-          )}
-          <div className="flex items-center gap-3 mt-2">
-            {daysStale && (
-              <span className="text-[10px] text-destructive font-medium flex items-center gap-1">
-                <Clock className="h-3 w-3" /> {daysStale} days stale
-              </span>
-            )}
-            {contact && (
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <Users className="h-3 w-3" /> {contact}
-              </span>
-            )}
-            {risk && (
-              <Badge variant={risk === 'high' ? 'destructive' : 'secondary'} className="text-[10px]">
-                {risk}
-              </Badge>
-            )}
-          </div>
-        </div>
+    <div className="flex items-center gap-4 py-3 border-b last:border-0">
+      <AlertTriangle className={cn(
+        'h-4 w-4 shrink-0',
+        risk === 'high' ? 'text-red-500' : 'text-amber-500'
+      )} />
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium text-foreground truncate">{cleanTitle}</p>
+        {notification.body && (
+          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{notification.body}</p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {daysStale && (
+          <span className="text-[10px] text-red-500 font-medium flex items-center gap-1">
+            <Clock className="h-3 w-3" /> {daysStale}d
+          </span>
+        )}
+        {contact && (
+          <span className="text-[10px] text-muted-foreground">{contact.split(',')[0]}</span>
+        )}
+        <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
       </div>
     </div>
   );
 }
 
-function InfoCard({ notification }: { notification: AtlasNotification }) {
+/* ── Info Row (minimal) ── */
+function InfoRow({ notification }: { notification: AtlasNotification }) {
+  const cleanTitle = notification.title.replace(/^[^\w\s]*\s*/, '');
   return (
-    <div className="rounded-lg border p-4 bg-muted/20">
-      <div className="flex items-start gap-3">
-        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground">{notification.title.replace(/^[^\s]+\s/, '')}</p>
-          {notification.body && (
-            <p className="text-xs text-muted-foreground mt-1">{notification.body}</p>
-          )}
-        </div>
-      </div>
+    <div className="flex items-center gap-3 py-2.5 border-b last:border-0">
+      <Eye className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+      <p className="text-[12px] text-muted-foreground flex-1">{cleanTitle}</p>
+      <span className="text-[10px] text-muted-foreground/50">{relativeTime(notification.created_at)}</span>
     </div>
   );
 }
 
-function SourcesBadge({ sources }: { sources: string[] }) {
-  const sourceIcons: Record<string, React.ReactNode> = {
-    hubspot: <Target className="h-3 w-3" />,
-    gmail: <Mail className="h-3 w-3" />,
-    calendar: <Calendar className="h-3 w-3" />,
-    supabase: <Shield className="h-3 w-3" />,
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {sources.map((s) => (
-        <span
-          key={s}
-          className="inline-flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full font-medium"
-        >
-          {sourceIcons[s] || null} {s}
-        </span>
-      ))}
-    </div>
-  );
-}
-
+/* ── Main Page ── */
 export default function MorningBrief() {
   const { data: brief, isLoading: briefLoading } = useMorningBrief();
   const { selectedPipeline } = useAppContext();
   const { data: deals } = useDeals(selectedPipeline);
   const { data: tasks } = useTodaysTasks();
+  const markAllRead = useMarkAllRead();
 
   if (briefLoading) {
     return (
-      <div className="space-y-6 max-w-[900px]">
-        <Skeleton className="h-20 rounded-xl" />
-        <Skeleton className="h-28 rounded-xl" />
-        <Skeleton className="h-28 rounded-xl" />
-        <Skeleton className="h-28 rounded-xl" />
+      <div className="space-y-4 max-w-[860px] mx-auto">
+        <Skeleton className="h-16 rounded-2xl" />
+        <div className="grid grid-cols-4 gap-3">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+        </div>
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-40 rounded-2xl" />
       </div>
     );
   }
@@ -214,151 +233,116 @@ export default function MorningBrief() {
   const atRisk = allDeals.filter((d) => d.status === 'at_risk' || d.status === 'needs_attention').length;
   const pendingTasks = (tasks || []).length;
   const scanMeta = brief?.agentScan?.metadata as Record<string, unknown> | null;
-  const sourcesList = (scanMeta?.sources_scanned as string[]) || ['hubspot', 'gmail', 'calendar', 'supabase'];
   const meetingsToday = (brief?.header?.metadata?.meetings_count as number) || (scanMeta?.meetings_today as number) || 0;
-
   const noBrief = !brief?.header;
 
+  const today = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dateStr = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}`;
+
   return (
-    <div className="space-y-6 max-w-[900px]">
-      {/* ── Header ── */}
-      <div className="rounded-xl border bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                <Sun className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Morning Brief</h1>
-                <p className="text-xs text-muted-foreground">
-                  {brief?.header
-                    ? formatDate(brief.briefDate || new Date().toISOString())
-                    : formatDate(new Date().toISOString())}
-                  {brief?.header && (
-                    <span className="ml-2 text-muted-foreground/60">
-                      Generated {relativeTime(brief.header.created_at)}
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-            {!noBrief && <SourcesBadge sources={sourcesList} />}
-          </div>
+    <div className="max-w-[860px] mx-auto space-y-6">
+
+      {/* ── Date Header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{dateStr}</h1>
           {brief?.header && (
-            <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-              <CheckCircle2 className="h-3 w-3 mr-1" /> Scan complete
-            </Badge>
+            <p className="text-[12px] text-muted-foreground mt-1">
+              Scanned {relativeTime(brief.header.created_at)} — HubSpot, Gmail, Calendar, Supabase
+            </p>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          {brief?.header && (
+            <Badge variant="outline" className="text-emerald-600 border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 text-[11px] gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Live
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7"
+            onClick={() => markAllRead.mutate()}
+          >
+            Clear all
+          </Button>
+        </div>
+      </div>
 
-        {noBrief && (
-          <div className="mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
-              No morning brief generated yet today. Run the morning command from Claude to generate one.
-            </p>
+      {/* ── Stats Row ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatPill value={formatCurrency(totalValue)} label="Pipeline" color="bg-blue-500" />
+        <StatPill value={meetingsToday} label="Meetings today" color="bg-violet-500" />
+        <StatPill value={allDeals.length} label="Active deals" color="bg-emerald-500" />
+        <StatPill value={atRisk || pendingTasks} label="Needs attention" color="bg-amber-500" />
+      </div>
+
+      {/* ── No brief warning ── */}
+      {noBrief && (
+        <div className="rounded-2xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-5">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <div>
+              <p className="text-sm font-medium text-foreground">No brief generated today</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Run the morning command from Claude to generate one, or wait for the 8am automated scan.</p>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── Quick Stats ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <MetricCard
-          label="Pipeline"
-          value={formatCurrency(totalValue)}
-          icon={<DollarSign className="h-4 w-4" />}
-          className="!p-4"
-        />
-        <MetricCard
-          label="Active Deals"
-          value={allDeals.length}
-          icon={<BarChart3 className="h-4 w-4" />}
-          className="!p-4"
-        />
-        <MetricCard
-          label="Meetings Today"
-          value={meetingsToday}
-          icon={<Calendar className="h-4 w-4" />}
-          className="!p-4"
-        />
-        <MetricCard
-          label="Needs Attention"
-          value={atRisk}
-          subtitle={`${pendingTasks} tasks pending`}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          className="!p-4"
-        />
-      </div>
-
-      {/* ── TOP ACTIONS ── */}
+      {/* ── Focus: Critical & High Actions ── */}
       {(brief?.actions?.length ?? 0) > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              Top Actions
-              <Badge className="ml-1 text-xs">{brief!.actions.length}</Badge>
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Your highest-impact actions for today. Do these first.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {brief!.actions.map((a, i) => (
-              <ActionCard key={a.id} notification={a} index={i} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── DEAL ALERTS ── */}
-      {(brief?.dealAlerts?.length ?? 0) > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Deal Alerts
-              <Badge variant="secondary" className="ml-1 text-xs">{brief!.dealAlerts.length}</Badge>
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Deals that need attention or have risk signals.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {brief!.dealAlerts.map((a) => (
-              <AlertCard key={a.id} notification={a} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── INFO / FYI ── */}
-      {(brief?.infoItems?.length ?? 0) > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Info className="h-5 w-5 text-blue-500" />
-              Updates
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {brief!.infoItems.map((a) => (
-              <InfoCard key={a.id} notification={a} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Agent Scan Details ── */}
-      {brief?.agentScan && (
-        <div className="rounded-lg border bg-muted/20 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scan Details</span>
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="h-4 w-4 text-foreground" />
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Focus</h2>
+            <Badge variant="secondary" className="text-[10px] ml-1">{brief!.actions.length}</Badge>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{brief.agentScan.description}</p>
-          <p className="text-[10px] text-muted-foreground/60 mt-2">
-            {relativeTime(brief.agentScan.created_at)}
+          <div className="space-y-3">
+            {brief!.actions.map((a, i) => (
+              <FocusCard key={a.id} notification={a} index={i} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Alerts ── */}
+      {(brief?.dealAlerts?.length ?? 0) > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="h-4 w-4 text-foreground" />
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Alerts</h2>
+          </div>
+          <div className="rounded-2xl border bg-card px-5">
+            {brief!.dealAlerts.map((a) => (
+              <AlertRow key={a.id} notification={a} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Updates ── */}
+      {(brief?.infoItems?.length ?? 0) > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Updates</h2>
+          </div>
+          <div className="rounded-2xl border bg-card px-5">
+            {brief!.infoItems.map((a) => (
+              <InfoRow key={a.id} notification={a} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Scan footer ── */}
+      {brief?.agentScan && (
+        <div className="text-center py-4">
+          <p className="text-[11px] text-muted-foreground/50">
+            ATLAS scan — {brief.agentScan.description} — {relativeTime(brief.agentScan.created_at)}
           </p>
         </div>
       )}
