@@ -16,34 +16,40 @@ export function useMorningBrief() {
   return useQuery({
     queryKey: ['morning-brief'],
     queryFn: async (): Promise<MorningBriefData> => {
-      // Get all morning-brief notifications from today (or latest batch)
+      // Get today's start in UTC
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+      // Get ALL morning-brief notifications from today
       const { data: notifications, error: nErr } = await supabase
         .from('atlas_notifications')
         .select('*')
         .eq('agent_name', 'morning-brief')
+        .gte('created_at', todayStart)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
 
       if (nErr) throw nErr;
 
-      const items = (notifications || []) as AtlasNotification[];
+      // If no today's data, fall back to latest 20
+      let items = (notifications || []) as AtlasNotification[];
+      if (items.length === 0) {
+        const { data: fallback } = await supabase
+          .from('atlas_notifications')
+          .select('*')
+          .eq('agent_name', 'morning-brief')
+          .order('created_at', { ascending: false })
+          .limit(20);
+        items = (fallback || []) as AtlasNotification[];
+      }
 
-      // Find the latest brief header to determine the date
+      // Find the latest brief header
       const header = items.find((n) => n.notification_type === 'morning_brief') || null;
       const briefDate = header?.metadata?.date as string | null || null;
 
-      // If we have a brief date, filter to only that date's items
-      // Otherwise just use the latest batch (same created_at window)
-      let briefItems = items;
-      if (header) {
-        const headerTime = new Date(header.created_at).getTime();
-        // Items within 5 minutes of the header
-        briefItems = items.filter(
-          (n) => Math.abs(new Date(n.created_at).getTime() - headerTime) < 5 * 60 * 1000
-        );
-      }
-
-      const actions = briefItems
+      // Use ALL items from today — no time-window filter
+      // Actions, alerts, and info are all grouped by notification_type
+      const actions = items
         .filter((n) => n.notification_type === 'action_required')
         .sort((a, b) => {
           const pa = (a.metadata?.priority_rank as number) || 99;
@@ -51,8 +57,8 @@ export function useMorningBrief() {
           return pa - pb;
         });
 
-      const dealAlerts = briefItems.filter((n) => n.notification_type === 'deal_alert');
-      const infoItems = briefItems.filter((n) => n.notification_type === 'info');
+      const dealAlerts = items.filter((n) => n.notification_type === 'deal_alert');
+      const infoItems = items.filter((n) => n.notification_type === 'info');
 
       // Get the agent scan log
       const { data: agentLogs } = await supabase
@@ -71,9 +77,9 @@ export function useMorningBrief() {
         dealAlerts,
         infoItems,
         agentScan,
-        allBriefNotifications: briefItems,
+        allBriefNotifications: items,
       };
     },
-    refetchInterval: 60 * 1000, // 1 min
+    refetchInterval: 60 * 1000,
   });
 }
