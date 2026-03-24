@@ -46,7 +46,7 @@ export function TodaysTasks({ tasks, overdueCount = 0 }: TodaysTasksProps) {
                       onClick={() => task.deal_id && setSelectedDealId(task.deal_id)}
                       className="text-xs text-primary hover:underline mt-0.5"
                     >
-                      {(task.deals as any).deal_name}
+                      {task.deals.deal_name}
                     </button>
                   )}
                 </div>

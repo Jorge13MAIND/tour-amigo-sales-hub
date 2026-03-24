@@ -187,8 +187,8 @@ export default function Approvals() {
       queryClient.invalidateQueries({ queryKey: ['agent-activity'] });
       queryClient.invalidateQueries({ queryKey: ['pending-approval-count'] });
       queryClient.invalidateQueries({ queryKey: ['agent-stats-today'] });
-    } catch (err: any) {
-      toast.error('Error', { description: err.message || 'Failed to process approval' });
+    } catch (err: unknown) {
+      toast.error('Error', { description: err instanceof Error ? err.message : 'Failed to process approval' });
     } finally {
       setProcessing(null);
     }

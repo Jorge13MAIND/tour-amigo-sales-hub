@@ -25,7 +25,7 @@ export function UpcomingTasks({ tasks }: UpcomingTasksProps) {
                 onClick={() => task.deal_id && setSelectedDealId(task.deal_id)}
                 className="text-xs text-primary hover:underline shrink-0 truncate max-w-[100px]"
               >
-                {(task.deals as any).deal_name}
+                {task.deals.deal_name}
               </button>
             )}
             <PriorityBadge priority={task.priority} />

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATLAS — Autonomous Sales Intelligence Engine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a2e;
+    --border: #2a2a3e;
+    --text: #e8e8f0;
+    --text-muted: #8888a0;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --green: #22c55e;
+    --green-glow: rgba(34, 197, 94, 0.15);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --cyan: #06b6d4;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 60px 40px; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 80px 0 60px;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -100px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero .badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero .subtitle {
+    font-size: 20px;
+    color: var(--text-muted);
+    max-width: 700px;
+    margin: 0 auto 40px;
+    font-weight: 300;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .number {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .hero-stat .label {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Sections */
+  .section {
+    margin: 80px 0;
+  }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section h2 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+  }
+  .section .desc {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 800px;
+    margin-bottom: 40px;
+  }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card .icon {
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+  .card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .card p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .card .tag {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .tag-live { background: var(--green-glow); color: var(--green); }
+  .tag-auto { background: var(--accent-glow); color: var(--accent); }
+
+  /* Architecture */
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .arch-layer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .arch-layer .layer-num {
+    flex-shrink: 0;
+    width: 48px; height: 48px;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: var(--accent);
+  }
+  .arch-layer h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .arch-layer p { font-size: 14px; color: var(--text-muted); }
+  .arch-layer .detail {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: var(--surface-2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  /* Agent Table */
+  .agent-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+  }
+  .agent-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .agent-table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .agent-table tr:hover { background: var(--surface); }
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .status-green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  /* Security */
+  .security-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .security-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .security-item h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .security-item p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .shield { color: var(--green); }
+
+  /* Cost Table */
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .cost-table th {
+    text-align: left;
+    padding: 16px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-2);
+  }
+  .cost-table td {
+    padding: 14px 20px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cost-table .cost-val {
+    font-weight: 700;
+    color: var(--green);
+    font-size: 16px;
+  }
+  .cost-table .total-row td {
+    background: var(--surface-2);
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .cost-note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  /* Impact */
+  .impact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .impact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+  }
+  .impact-card .metric {
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .impact-card .metric-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .impact-card .explain {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Projections */
+  .projection-timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+  .projection-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent), var(--green));
+  }
+  .projection-item {
+    position: relative;
+    margin-bottom: 40px;
+    padding: 24px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+  .projection-item::before {
+    content: '';
+    position: absolute;
+    left: -33px; top: 30px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .projection-item h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .projection-item .timeline-date {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .projection-item p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* ROI */
+  .roi-box {
+    background: linear-gradient(135deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    padding: 48px;
+    text-align: center;
+    margin: 40px 0;
+  }
+  .roi-box h3 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .roi-box .roi-number {
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .roi-box .roi-label {
+    font-size: 18px;
+    color: var(--text-muted);
+  }
+  .roi-box .roi-calc {
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Footer */
+  .doc-footer {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 80px;
+  }
+  .doc-footer p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .doc-footer .conf {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 6px 16px;
+    border: 1px solid var(--red);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+
+  @media (max-width: 768px) {
+    .page { padding: 30px 20px; }
+    .hero h1 { font-size: 36px; }
+    .impact-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 24px; }
+    .arch-layer { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">Tour Amigo Internal</div>
+    <h1>Project <span>ATLAS</span></h1>
+    <p class="subtitle">Autonomous Sales Intelligence Engine. 10 AI agents running 22 operations per day, managing a $195K+ pipeline while Jorge sleeps.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="number">10</div>
+        <div class="label">AI Agents</div>
+      </div>
+      <div class="hero-stat">
+        <div class="number">45</div>
+        <div class="label">Active Deals</div>
+      </div>
+      <div class="hero-stat">
+        <div class="number">22</div>
+        <div class="label">Daily Runs</div>
+      </div>
+      <div class="hero-stat">
+        <div class="number">5-10h</div>
+        <div class="label">Jorge's Weekly Time</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE PROBLEM -->
+  <div class="section">
+    <div class="section-label">The Problem</div>
+    <h2>One Person. Forty-Five Deals. Zero Admin Time.</h2>
+    <p class="desc">Jorge manages Tour Amigo's entire sales pipeline with 5-10 hours per week. Without ATLAS, those hours would be split between CRM updates, email drafts, research, follow-ups, and data entry. With ATLAS, every minute goes to conversations with people who can buy Tour Amigo.</p>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section">
+    <div class="section-label">Architecture</div>
+    <h2>How ATLAS Works</h2>
+    <p class="desc">Three layers, each independent. If one fails, the others keep running. No single point of failure.</p>
+
+    <div class="arch-layers">
+      <div class="arch-layer">
+        <div class="layer-num">1</div>
+        <div>
+          <h3>Always-On Data Layer (Supabase + pg_cron)</h3>
+          <p>Runs 24/7 on cloud infrastructure, even when Jorge's laptop is off. Syncs HubSpot deals every hour, detects stale deals and risk changes every 30 minutes, snapshots daily metrics at 11pm.</p>
+          <div class="detail">3 pg_cron jobs | 18 tables | Row-Level Security | Realtime subscriptions</div>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="layer-num">2</div>
+        <div>
+          <h3>AI Agent Fleet (Claude Sonnet + macOS LaunchD)</h3>
+          <p>10 specialized agents, each with a specific job description. Run automatically via macOS LaunchD scheduler. Each agent reads from HubSpot, Gmail, Google Calendar, and Slack, then writes decisions, drafts, and actions back to the system.</p>
+          <div class="detail">10 agents | 22 runs/weekday | Claude Sonnet 4.6 | atlas-proxy Edge Function</div>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="layer-num">3</div>
+        <div>
+          <h3>Command Center (React + Supabase Realtime)</h3>
+          <p>Web dashboard where Jorge sees everything: pipeline, agent activity, notifications, deal rooms, approvals, and metrics. Works on desktop and mobile. Deployed on Netlify with permanent URL.</p>
+          <div class="detail">atlas-command-center.netlify.app | 11 pages | Realtime updates | Mobile-ready</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 AGENTS -->
+  <div class="section">
+    <div class="section-label">The Fleet</div>
+    <h2>10 Agents, 10 Jobs</h2>
+    <p class="desc">Each agent is autonomous. It reads context, makes decisions, takes action, and logs everything. Jorge only intervenes for high-value decisions.</p>
+
+    <table class="agent-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Schedule</th>
+          <th>What It Does</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Morning Brief</strong></td>
+          <td>8:00am</td>
+          <td>Scans pipeline, Gmail, calendar, risks. Delivers TOP 3 ACTIONS to start the day.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Calendar Prep</strong></td>
+          <td>7:30am</td>
+          <td>Researches every meeting attendee. Prepares briefing docs with deal context + talking points.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Inbound Processor</strong></td>
+          <td>9am/1pm/5pm</td>
+          <td>Reads Gmail, classifies emails by priority, researches senders, drafts replies, creates deals from positive replies.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Task Processor</strong></td>
+          <td>10am/2pm/6pm</td>
+          <td>Picks up pending tasks, matches playbooks, generates personalized follow-ups, drafts emails.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Outreach Engine</strong></td>
+          <td>9am/1pm</td>
+          <td>Processes 14,000+ HubSpot contacts. ICP scoring, personalized 4-step sequences, auto-enrollment (50/day).</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Deal Enrichment</strong></td>
+          <td>12pm</td>
+          <td>Re-researches 5-10 deals daily: company news, competitor moves, stakeholder changes, Gmail cross-reference.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Deal Room Sync</strong></td>
+          <td>7/11/3/7</td>
+          <td>Syncs all sources (HubSpot + Gmail + Calendar + Slack) into per-deal war rooms.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Outreach EOD</strong></td>
+          <td>8pm</td>
+          <td>Analyzes outreach metrics, detects anomalies, runs A/B test analysis, updates learnings.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Improvement Scan</strong></td>
+          <td>Fri 3pm</td>
+          <td>Weekly self-analysis: what worked, what failed, suggests system improvements.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+        <tr>
+          <td><strong>Weekly Report</strong></td>
+          <td>Fri 4pm</td>
+          <td>Full pipeline report with revenue-ops metrics, posted to Slack for the team.</td>
+          <td><span class="status-dot status-green"></span>Live</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECURITY -->
+  <div class="section">
+    <div class="section-label">Security & Data Protection</div>
+    <h2>Enterprise-Grade Security</h2>
+    <p class="desc">ATLAS handles sensitive sales data. Every layer is designed with security as a first-class concern.</p>
+
+    <div class="security-grid">
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> Row-Level Security (RLS)</h4>
+        <p>All 18 Supabase tables have RLS enabled. The anon role can only SELECT (read) data. Only the service_role (Edge Functions) can INSERT/UPDATE/DELETE. No client-side writes to sensitive tables.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> Credential Isolation</h4>
+        <p>All API keys (HubSpot, Gmail OAuth, Slack, Supabase service key) are stored as Supabase Edge Function secrets. Never in code, never in git, never on the client. The atlas-proxy Edge Function is the sole gateway.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> OAuth 2.0 for Google</h4>
+        <p>Gmail and Calendar access uses OAuth 2.0 with refresh tokens. No password storage. Tokens auto-refresh via the atlas-proxy Edge Function. Scopes limited to gmail.modify and calendar.readonly.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> No Direct Database Exposure</h4>
+        <p>The Command Center connects to Supabase via the public anon key (read-only). All write operations go through authenticated Edge Functions. No direct SQL access from the browser.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> Approval Gates</h4>
+        <p>High-value actions (sending emails to enterprise clients, changing deal stages, pricing decisions) require Jorge's explicit approval through the Command Center. Agents cannot bypass this.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> Full Audit Trail</h4>
+        <p>Every agent action is logged in the agent_activity table with timestamp, action type, reasoning, and result. 316+ entries and counting. Complete traceability of every automated decision.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> HubSpot as Source of Truth</h4>
+        <p>Supabase is a cache layer, not the source of truth. All deal decisions are made against live HubSpot data. If Supabase goes down, agents fall back to direct HubSpot queries.</p>
+      </div>
+      <div class="security-item">
+        <h4><span class="shield">&#9632;</span> Graceful Degradation</h4>
+        <p>If any service fails (Gmail, Calendar, Slack), agents skip that step and continue. They always deliver something useful, even if degraded. No cascading failures.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPACT -->
+  <div class="section">
+    <div class="section-label">Measured Impact</div>
+    <h2>What ATLAS Delivers Today</h2>
+
+    <div class="impact-grid">
+      <div class="impact-card">
+        <div class="metric">22x</div>
+        <div class="metric-label">Daily Operations</div>
+        <div class="explain">22 automated agent runs per weekday. Pipeline monitoring, email processing, outreach, enrichment, and reporting. Previously: Jorge doing this manually between meetings.</div>
+      </div>
+      <div class="impact-card">
+        <div class="metric">50</div>
+        <div class="metric-label">Daily Outreach</div>
+        <div class="explain">50 personalized cold emails per day, ICP-scored and 4-step sequenced. From a base of 14,000+ HubSpot contacts. Already converting: Moebius DMC (Argentina) came in as an outbound win.</div>
+      </div>
+      <div class="impact-card">
+        <div class="metric">0</div>
+        <div class="metric-label">CRM Admin Hours</div>
+        <div class="explain">Jorge spends zero time on CRM data entry, deal updates, follow-up scheduling, or pipeline reporting. ATLAS handles all of it. Every Jorge hour goes to selling.</div>
+      </div>
+    </div>
+
+    <div class="roi-box">
+      <h3>Return on Investment</h3>
+      <div class="roi-number">47x</div>
+      <div class="roi-label">Projected Annual ROI</div>
+      <div class="roi-calc">
+        ATLAS cost: ~$215/month ($2,580/year). If ATLAS contributes to closing just ONE additional enterprise deal per year ($50K-$85K ARR), the ROI is 19x-33x. With 50 daily outreach emails generating even a 1% demo conversion rate, that's 10+ new demos per month. Conservative estimate: 2-3 additional closed deals per year = $120K+ incremental ARR vs $2,580 cost = 47x ROI.
+      </div>
+    </div>
+  </div>
+
+  <!-- COSTS -->
+  <div class="section">
+    <div class="section-label">Cost Breakdown</div>
+    <h2>What ATLAS Costs to Run</h2>
+    <p class="desc">Full transparency. Every dollar accounted for.</p>
+
+    <table class="cost-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>What It Does</th>
+          <th>Plan</th>
+          <th>Monthly Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Claude API</strong></td>
+          <td>Powers all 10 agents (Sonnet 4.6)</td>
+          <td>Pay-per-use ($3/$15 per M tokens)</td>
+          <td class="cost-val">~$80-150</td>
+        </tr>
+        <tr>
+          <td><strong>Supabase</strong></td>
+          <td>Database, Edge Functions, Realtime, Auth</td>
+          <td>Pro ($25/mo)</td>
+          <td class="cost-val">$25</td>
+        </tr>
+        <tr>
+          <td><strong>Netlify</strong></td>
+          <td>Command Center hosting</td>
+          <td>Free tier</td>
+          <td class="cost-val">$0</td>
+        </tr>
+        <tr>
+          <td><strong>Slack API</strong></td>
+          <td>Agent notifications + DMs</td>
+          <td>Free (bot token)</td>
+          <td class="cost-val">$0</td>
+        </tr>
+        <tr>
+          <td><strong>Google APIs</strong></td>
+          <td>Gmail + Calendar access</td>
+          <td>Free (OAuth)</td>
+          <td class="cost-val">$0</td>
+        </tr>
+        <tr>
+          <td><strong>HubSpot</strong></td>
+          <td>CRM, Sequences, Contacts</td>
+          <td>Already paid by Tour Amigo</td>
+          <td class="cost-val">$0*</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3"><strong>Total ATLAS Infrastructure Cost</strong></td>
+          <td class="cost-val">~$105-175/mo</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cost-note">
+      <strong>*HubSpot note:</strong> Tour Amigo already pays for HubSpot Sales Hub. ATLAS uses the existing subscription &mdash; no additional cost. The Claude API estimate assumes ~22 agent runs/day x 20 weekdays = 440 runs/month, averaging ~$0.25-0.35 per run with Sonnet 4.6. Batch processing and prompt caching can reduce this by up to 50%.
+    </div>
+  </div>
+
+  <!-- PROJECTIONS -->
+  <div class="section">
+    <div class="section-label">Roadmap</div>
+    <h2>Projections & Next Milestones</h2>
+
+    <div class="projection-timeline">
+      <div class="projection-item">
+        <div class="timeline-date">Now &mdash; March 2026</div>
+        <h3>Foundation Complete</h3>
+        <p>All 10 agents operational. 45 active deals managed. Outreach engine running 50/day. Command Center live at permanent URL. Full audit trail. Gmail cross-reference patched. LaunchD automation stable.</p>
+      </div>
+      <div class="projection-item">
+        <div class="timeline-date">April 2026</div>
+        <h3>Self-Improving Loop</h3>
+        <p>Outreach A/B testing producing statistically significant results. Subject line optimization automated. ICP scoring refined from actual conversion data. Weekly improvement scans generating actionable suggestions.</p>
+      </div>
+      <div class="projection-item">
+        <div class="timeline-date">May-June 2026</div>
+        <h3>Pipeline Acceleration</h3>
+        <p>Target: 10+ new demos/month from outreach engine. Deal room AI chat providing real-time competitive intelligence during calls. Meeting debrief automation (Gemini notes to HubSpot to follow-up draft in one flow).</p>
+      </div>
+      <div class="projection-item">
+        <div class="timeline-date">Q3 2026</div>
+        <h3>Scale & Replicate</h3>
+        <p>If ATLAS proves 2-3 additional closed deals/quarter, evaluate: (1) Adding a second sales rep supported by the same system. (2) Packaging ATLAS architecture as a product/service for other SaaS sales teams.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPETITIVE ADVANTAGE -->
+  <div class="section">
+    <div class="section-label">Strategic Advantage</div>
+    <h2>Why This Matters for Tour Amigo</h2>
+    <p class="desc">ATLAS is not just a productivity tool. It's a structural competitive advantage.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="icon">&#9889;</div>
+        <h3>Speed to Close</h3>
+        <p>When Omniche's GM asks for contract terms at 10pm Sydney time, ATLAS detects it at the next inbound scan, drafts a response, and has it ready for Jorge by morning. No deal goes cold because of timezone gaps.</p>
+        <div class="tag tag-live">Live Now</div>
+      </div>
+      <div class="card">
+        <div class="icon">&#128200;</div>
+        <h3>Intelligence Compounding</h3>
+        <p>Every agent run adds to the knowledge base. Deal enrichment finds a competitor's new pricing. Outreach learns which subject lines convert. The system gets smarter every day without additional cost.</p>
+        <div class="tag tag-auto">Automated</div>
+      </div>
+      <div class="card">
+        <div class="icon">&#127919;</div>
+        <h3>Scale Without Headcount</h3>
+        <p>ATLAS does the work of 2-3 SDRs + 1 sales ops analyst. At ~$150/month instead of $15,000+/month in salaries. As the pipeline grows, ATLAS scales linearly with minimal cost increase.</p>
+        <div class="tag tag-live">Live Now</div>
+      </div>
+      <div class="card">
+        <div class="icon">&#128274;</div>
+        <h3>Institutional Memory</h3>
+        <p>When a deal goes quiet for 3 months and then comes back, ATLAS has the full history: every email, every meeting note, every competitor mention. No context loss. No "let me get up to speed" calls.</p>
+        <div class="tag tag-auto">Automated</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RISK MITIGATION -->
+  <div class="section">
+    <div class="section-label">Risk Mitigation</div>
+    <h2>What Could Go Wrong (and How We Prevent It)</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>Agent sends wrong email</h3>
+        <p>Enterprise deals (Tier 1) always require approval before sending. Only Tier 2/3 auto-send is enabled, and only for playbook-matched follow-ups. All drafts are visible in Gmail drafts folder before sending.</p>
+      </div>
+      <div class="card">
+        <h3>API costs spike unexpectedly</h3>
+        <p>Daily limit of 22 runs hardcoded in schedule. Each run uses Sonnet (not Opus) to control cost. Batch processing and caching reduce token usage by up to 50%. Monthly cap can be set via Anthropic dashboard.</p>
+      </div>
+      <div class="card">
+        <h3>Service outage (Supabase/HubSpot)</h3>
+        <p>Each agent handles failures gracefully: skip the broken service, note it, continue with available data. Morning brief still delivers even if Gmail is down. No cascading failures.</p>
+      </div>
+      <div class="card">
+        <h3>Data becomes stale</h3>
+        <p>Gmail cross-reference patch ensures agents check actual email activity before calling deals "stale." HubSpot syncs hourly via pg_cron. Deal monitor runs every 30 minutes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="doc-footer">
+    <p>Project ATLAS | Tour Amigo | Built by Jorge Pittaluga + Claude</p>
+    <p style="margin-top: 8px;">Command Center: atlas-command-center.netlify.app</p>
+    <div class="conf">Confidential &mdash; Internal Use Only</div>
+    <p style="margin-top: 16px; font-size: 11px; color: #555;">Document generated March 18, 2026</p>
+  </div>
+
+</div>
+</body>
+</html>

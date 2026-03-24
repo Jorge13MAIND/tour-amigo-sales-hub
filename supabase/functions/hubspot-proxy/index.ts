@@ -1,9 +1,24 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// CORS: restrict to known origins (CC dev + production domains)
+const ALLOWED_ORIGINS = [
+  'http://localhost:8080',
+  'http://localhost:8081',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '';
+  const isAllowed = ALLOWED_ORIGINS.includes(origin)
+    || origin.endsWith('.lovable.app')
+    || origin.endsWith('.lovable.dev');
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : 'null',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  };
+}
 
 const HUBSPOT_API = 'https://api.hubapi.com';
 
@@ -289,6 +304,7 @@ async function markAllNotificationsRead() {
 
 // --- Main Handler ---
 
+// deno-lint-ignore no-explicit-any
 const ACTIONS: Record<string, (payload: any) => Promise<any>> = {
   update_deal: updateDeal,
   create_note: createNote,
@@ -304,8 +320,10 @@ const ACTIONS: Record<string, (payload: any) => Promise<any>> = {
 };
 
 Deno.serve(async (req) => {
+  const cors = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: cors });
   }
 
   try {
@@ -314,10 +332,10 @@ Deno.serve(async (req) => {
     // Support both { action, payload: {...} } and { action, ...rest } formats
     const payload = body.payload || ((() => { const { action: _, ...rest } = body; return rest; })());
 
-    if (!action || !ACTIONS[action]) {
+    if (!action || typeof action !== 'string' || !ACTIONS[action]) {
       return new Response(
         JSON.stringify({ error: `Unknown action: ${action}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -325,14 +343,14 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('hubspot-proxy error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
     );
   }
 });

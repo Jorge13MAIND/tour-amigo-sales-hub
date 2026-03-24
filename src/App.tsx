@@ -61,7 +61,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Suspense fallback={<LazyFallback />}><MorningBrief /></Suspense>} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/pipeline" element={<Pipeline />} />
         <Route path="/decisions" element={<Decisions />} />
         <Route path="/metrics" element={<Suspense fallback={<LazyFallback />}><Metrics /></Suspense>} />
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="/deal-rooms/:id" element={<Suspense fallback={<LazyFallback />}><DealRoom /></Suspense>} />
         <Route path="/outreach" element={<Suspense fallback={<LazyFallback />}><Outreach /></Suspense>} />
         <Route path="/brief" element={<Suspense fallback={<LazyFallback />}><MorningBrief /></Suspense>} />
+        {/* /brief and / render the same component — Brief is home */}
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

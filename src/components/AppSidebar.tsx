@@ -44,8 +44,8 @@ export function AppSidebar() {
   }, [isDark]);
 
   const mainItems: NavItem[] = [
-    { title: 'Morning Brief', url: '/brief', icon: Sunrise, badge: 0, badgeColor: '' },
-    { title: 'Dashboard', url: '/', icon: LayoutGrid, badge: 0, badgeColor: '' },
+    { title: 'Morning Brief', url: '/', icon: Sunrise, badge: 0, badgeColor: '' },
+    { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid, badge: 0, badgeColor: '' },
     { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
     { title: 'Deal Rooms', url: '/deal-rooms', icon: Building2, badge: 0, badgeColor: '' },
   ];
