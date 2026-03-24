@@ -4,49 +4,49 @@
 
 @layer base {
   :root {
-    /* Tour Amigo light theme — warm, trustworthy, premium */
-    --background: 40 30% 97%;
-    --foreground: 228 50% 15%;
-    --card: 40 20% 100%;
-    --card-foreground: 228 50% 15%;
+    /* Apple-inspired design system — #f5f5f7 background, white cards, shadow depth */
+    --background: 240 5% 96%;
+    --foreground: 0 0% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 228 50% 15%;
-    --primary: 340 97% 44%;
+    --popover-foreground: 0 0% 11%;
+    --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 35 20% 93%;
-    --secondary-foreground: 228 50% 15%;
-    --muted: 35 15% 94%;
-    --muted-foreground: 220 10% 44%;
-    --accent: 35 30% 95%;
-    --accent-foreground: 228 50% 15%;
-    --destructive: 0 72% 51%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 0 0% 11%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 0 0% 11%;
+    --destructive: 4 90% 58%;
     --destructive-foreground: 0 0% 100%;
-    --border: 35 15% 88%;
-    --input: 35 15% 88%;
-    --ring: 340 97% 44%;
-    --radius: 0.75rem;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 211 100% 50%;
+    --radius: 1rem;
 
     --brand-pink: 340 97% 44%;
     --brand-yellow: 42 100% 58%;
-    --brand-blue: 210 100% 70%;
-    --brand-navy: 228 83% 28%;
+    --brand-blue: 211 100% 50%;
+    --brand-navy: 228 83% 20%;
     --brand-light-blue: 210 60% 95%;
 
-    --risk-low: 152 60% 42%;
-    --risk-low-foreground: 152 60% 18%;
-    --risk-medium: 42 90% 50%;
-    --risk-medium-foreground: 42 80% 20%;
-    --risk-high: 340 97% 44%;
+    --risk-low: 145 65% 42%;
+    --risk-low-foreground: 145 65% 18%;
+    --risk-medium: 36 100% 50%;
+    --risk-medium-foreground: 36 80% 20%;
+    --risk-high: 4 90% 58%;
     --risk-high-foreground: 0 0% 100%;
 
-    --sidebar-background: 228 83% 20%;
-    --sidebar-foreground: 210 30% 88%;
-    --sidebar-primary: 340 97% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 70% 28%;
+    --sidebar-background: 228 83% 17%;
+    --sidebar-foreground: 220 20% 80%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 228 83% 17%;
+    --sidebar-accent: 228 60% 24%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 228 60% 25%;
-    --sidebar-ring: 340 97% 44%;
+    --sidebar-border: 228 50% 22%;
+    --sidebar-ring: 211 100% 50%;
   }
 
   .dark {
@@ -56,7 +56,7 @@
     --card-foreground: 210 20% 90%;
     --popover: 225 20% 12%;
     --popover-foreground: 210 20% 90%;
-    --primary: 340 97% 50%;
+    --primary: 211 100% 55%;
     --primary-foreground: 0 0% 100%;
     --secondary: 225 15% 18%;
     --secondary-foreground: 210 20% 90%;
@@ -64,20 +64,20 @@
     --muted-foreground: 220 10% 55%;
     --accent: 225 15% 18%;
     --accent-foreground: 210 20% 90%;
-    --destructive: 0 72% 51%;
+    --destructive: 4 90% 58%;
     --destructive-foreground: 0 0% 100%;
     --border: 225 15% 20%;
     --input: 225 15% 20%;
-    --ring: 340 97% 50%;
+    --ring: 211 100% 55%;
 
-    --sidebar-background: 228 83% 14%;
-    --sidebar-foreground: 210 20% 80%;
-    --sidebar-primary: 340 97% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 60% 22%;
+    --sidebar-background: 228 83% 12%;
+    --sidebar-foreground: 210 20% 75%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 228 83% 12%;
+    --sidebar-accent: 228 60% 20%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 228 50% 18%;
-    --sidebar-ring: 340 97% 50%;
+    --sidebar-border: 228 50% 16%;
+    --sidebar-ring: 211 100% 55%;
   }
 }
 
@@ -86,11 +86,42 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground;
+    font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
   .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  }
+}
+
+/* Apple-style global overrides */
+@layer components {
+  /* Cards: shadow-based depth, no visible borders */
+  .border {
+    border-color: transparent;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .border:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  /* Rounded corners: 16px default */
+  .rounded-lg { border-radius: 14px; }
+  .rounded-xl { border-radius: 16px; }
+  .rounded-2xl { border-radius: 20px; }
+
+  /* Buttons: pill-shaped by default */
+  button, [role="button"] {
+    letter-spacing: -0.01em;
+  }
+
+  /* Badge: subtle, not loud */
+  [data-slot="badge"] {
+    font-weight: 600;
+    letter-spacing: 0;
   }
 }
 

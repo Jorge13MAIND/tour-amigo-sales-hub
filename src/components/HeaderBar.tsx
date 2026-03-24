@@ -16,7 +16,7 @@ export function HeaderBar() {
   const isStale = syncTime ? (Date.now() - new Date(syncTime).getTime()) > 2 * 60 * 60 * 1000 : false;
 
   return (
-    <header className="h-14 flex items-center justify-between border-b border-border px-5 bg-card shadow-sm">
+    <header className="h-[52px] flex items-center justify-between px-6 bg-white/70 backdrop-blur-xl backdrop-saturate-150 border-b border-black/[0.06] sticky top-0 z-50">
       <div className="flex items-center gap-3">
         <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
         <div className="w-px h-6 bg-border" />
