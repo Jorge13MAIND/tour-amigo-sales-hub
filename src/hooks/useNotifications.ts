@@ -74,6 +74,25 @@ export function useMarkAllRead() {
   });
 }
 
+export function useTodaysMeetingCount() {
+  return useQuery({
+    queryKey: ['meetings-today-count'],
+    queryFn: async () => {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { count, error } = await supabase
+        .from('atlas_notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('agent_name', 'calendar-prep')
+        .eq('notification_type', 'meeting_prep')
+        .gte('created_at', todayStart.toISOString());
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 5 * 60 * 1000,
+  });
+}
+
 export function useRealtimeNotifications() {
   const qc = useQueryClient();
 

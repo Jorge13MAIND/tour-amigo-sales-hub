@@ -6,13 +6,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:8081',
   'http://localhost:3000',
   'http://localhost:5173',
+  'https://atlastacc.netlify.app',
 ];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
   const isAllowed = ALLOWED_ORIGINS.includes(origin)
     || origin.endsWith('.lovable.app')
-    || origin.endsWith('.lovable.dev');
+    || origin.endsWith('.lovable.dev')
+    || origin.endsWith('.netlify.app');
   return {
     'Access-Control-Allow-Origin': isAllowed ? origin : 'null',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

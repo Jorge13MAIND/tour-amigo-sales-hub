@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useMorningBrief } from '@/hooks/useMorningBrief';
 import { useDeals } from '@/hooks/useDeals';
 import { useTodaysTasks } from '@/hooks/useTasks';
-import { useMarkNotificationRead, useMarkAllRead } from '@/hooks/useNotifications';
+import { useMarkNotificationRead, useMarkAllRead, useTodaysMeetingCount } from '@/hooks/useNotifications';
 import { useAppContext } from '@/contexts/AppContext';
 import { formatCurrency, relativeTime } from '@/lib/format';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,12 +25,18 @@ import type { AtlasNotification } from '@/lib/types';
 /* ── Apple-style Focus Card ── */
 function FocusCard({ notification, index }: { notification: AtlasNotification; index: number }) {
   const markRead = useMarkNotificationRead();
+  const [draftOpen, setDraftOpen] = useState(false);
   const priority = notification.priority || 'normal';
   const meta = notification.metadata || {};
   const dealName = meta.deal_name as string | undefined;
   const contact = meta.contact as string | undefined;
   const competitor = meta.competitor as string | undefined;
   const action = meta.action as string | undefined;
+  const draftTo = meta.to as string | undefined;
+  const draftSubject = meta.subject as string | undefined;
+  const draftBody = meta.body_preview as string | undefined;
+  const draftId = meta.draft_id as string | undefined;
+  const activityId = meta.activity_id as string | undefined;
 
   const cleanTitle = notification.title.replace(/^[^\w\s]*\s*(?:ACTION \d+:\s*)?/i, '');
 
@@ -98,17 +105,27 @@ function FocusCard({ notification, index }: { notification: AtlasNotification; i
         )}
 
         {/* Draft preview (inline) */}
-        {(action === 'reply_email' || action === 'send_follow_up') && (
+        {(action === 'reply_email' || action === 'send_follow_up' || action === 'follow_up') && (
           <div className="mt-4 bg-muted/50 rounded-xl p-4">
             <p className="text-[12px] text-muted-foreground/60 mb-0.5">
-              To: {contact || 'Contact'}
+              To: {draftTo || contact || 'Contact'}
             </p>
             <p className="text-[13px] font-semibold text-foreground mb-2">
-              RE: Tour Amigo {dealName ? `for ${dealName}` : ''}
+              {draftSubject || `RE: Tour Amigo ${dealName ? `for ${dealName}` : ''}`}
             </p>
-            <p className="text-[13px] text-muted-foreground leading-relaxed italic">
-              Draft ready for review. Click View Draft to see full email.
-            </p>
+            {draftOpen && draftBody ? (
+              <div className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap border-t border-border/50 pt-3 mt-2">
+                {draftBody}
+              </div>
+            ) : draftBody ? (
+              <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2">
+                {draftBody}
+              </p>
+            ) : (
+              <p className="text-[13px] text-muted-foreground leading-relaxed italic">
+                Draft ready for review.
+              </p>
+            )}
           </div>
         )}
 
@@ -128,12 +145,23 @@ function FocusCard({ notification, index }: { notification: AtlasNotification; i
           <div className="flex items-center gap-2">
             {(action === 'reply_email' || action === 'send_follow_up' || action === 'follow_up') && (
               <>
-                <button className="px-4 py-2 rounded-full text-[13px] font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-1.5">
-                  <Send className="h-3.5 w-3.5" /> View Draft
+                <button
+                  className="px-4 py-2 rounded-full text-[13px] font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  onClick={(e) => { e.stopPropagation(); setDraftOpen(!draftOpen); }}
+                >
+                  <Send className="h-3.5 w-3.5" /> {draftOpen ? 'Collapse' : 'View Draft'}
                 </button>
-                <button className="px-4 py-2 rounded-full text-[13px] font-semibold bg-muted text-foreground hover:bg-muted/80 transition-colors flex items-center gap-1.5">
-                  <Pencil className="h-3.5 w-3.5" /> Edit
-                </button>
+                {draftId && (
+                  <a
+                    href={`https://mail.google.com/mail/u/0/#drafts/${draftId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-full text-[13px] font-semibold bg-muted text-foreground hover:bg-muted/80 transition-colors flex items-center gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Edit in Gmail
+                  </a>
+                )}
               </>
             )}
             {action === 'schedule_demo' && (
@@ -223,6 +251,7 @@ export default function MorningBrief() {
   const { selectedPipeline, setIsChatOpen } = useAppContext();
   const { data: deals } = useDeals(selectedPipeline);
   const { data: tasks } = useTodaysTasks();
+  const { data: calendarMeetingCount } = useTodaysMeetingCount();
   const markAllRead = useMarkAllRead();
 
   if (briefLoading) {
@@ -243,7 +272,7 @@ export default function MorningBrief() {
   const atRisk = allDeals.filter((d) => d.status === 'at_risk' || d.status === 'needs_attention').length;
   const pendingTasks = (tasks || []).length;
   const scanMeta = brief?.agentScan?.metadata as Record<string, unknown> | null;
-  const meetingsToday = (brief?.header?.metadata?.meetings_count as number) || (scanMeta?.meetings_today as number) || 0;
+  const meetingsToday = calendarMeetingCount || (brief?.header?.metadata?.meetings_count as number) || (scanMeta?.meetings_today as number) || 0;
   const noBrief = !brief?.header;
 
   const today = new Date();

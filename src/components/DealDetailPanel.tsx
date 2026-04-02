@@ -23,6 +23,10 @@ const STAGE_OPTIONS = [
   { value: 'Demo Completed', label: 'Demo Completed' },
   { value: 'Proposal Sent', label: 'Proposal Sent' },
   { value: 'Negotiation', label: 'Negotiation' },
+  { value: 'Commit', label: 'Commit' },
+  { value: 'Closed Won', label: 'Closed Won' },
+  { value: 'Closed Lost', label: 'Closed Lost' },
+  { value: 'Follow Up Future', label: 'Follow Up Future' },
 ];
 
 const PRIORITY_OPTIONS = [
