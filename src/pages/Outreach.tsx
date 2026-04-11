@@ -98,8 +98,38 @@ export default function Outreach() {
 
   return (
     <div className="space-y-5 max-w-[1400px]">
-      {/* Metric Cards */}
+      {/* Hero Metrics — All-Time */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          label="Total Emails Sent"
+          value={stats?.totalSent ?? 0}
+          subtitle={
+            <span className="text-[10px]">
+              {stats?.totalDelivered ?? 0} delivered / {stats?.totalBounced ?? 0} bounced
+            </span>
+          }
+          icon={<Send className="h-4 w-4 text-orange-500" />}
+        />
+        <MetricCard
+          label="Reply Rate"
+          value={stats?.replyRate != null ? `${(stats.replyRate * 100).toFixed(1)}%` : '--'}
+          subtitle={
+            <span className="text-[10px]">
+              {stats?.totalReplied ?? 0} replies from {stats?.totalDelivered ?? 0} delivered
+            </span>
+          }
+          icon={<MessageSquare className="h-4 w-4 text-emerald-500" />}
+        />
+        <MetricCard
+          label="Positive Replies"
+          value={stats?.totalPositive ?? 0}
+          subtitle={
+            <span className="text-[10px]">
+              {stats?.positiveReplyRate != null ? `${(stats.positiveReplyRate * 100).toFixed(1)}%` : '--'} positive rate
+            </span>
+          }
+          icon={<ThumbsUp className="h-4 w-4 text-emerald-600" />}
+        />
         <MetricCard
           label="Sent Today"
           value={stats?.todaySent ?? 0}
@@ -109,25 +139,7 @@ export default function Outreach() {
               <Progress value={Math.min(((stats?.todaySent ?? 0) / 50) * 100, 100)} className="h-1.5 mt-1" />
             </>
           }
-          icon={<Send className="h-4 w-4 text-orange-500" />}
-        />
-        <MetricCard
-          label="Open Rate"
-          value={latestMetric?.open_rate != null ? `${(latestMetric.open_rate * 100).toFixed(1)}%` : '--'}
-          subtitle="last 7 days"
           icon={<Eye className="h-4 w-4 text-blue-500" />}
-        />
-        <MetricCard
-          label="Reply Rate"
-          value={latestMetric?.reply_rate != null ? `${(latestMetric.reply_rate * 100).toFixed(1)}%` : '--'}
-          subtitle="last 7 days"
-          icon={<MessageSquare className="h-4 w-4 text-emerald-500" />}
-        />
-        <MetricCard
-          label="Positive Replies"
-          value={stats?.weekPositive ?? 0}
-          subtitle="this week"
-          icon={<ThumbsUp className="h-4 w-4 text-emerald-600" />}
         />
       </div>
 

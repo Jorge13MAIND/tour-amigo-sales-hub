@@ -69,10 +69,10 @@ export function useOutreachStats() {
       const weekReplies = weekData?.filter(c => c.status === 'replied').length ?? 0;
       const weekPositive = weekData?.filter(c => c.reply_sentiment === 'positive').length ?? 0;
 
-      // Total by status
+      // Total by status — all-time counts from outreach_contacts
       const { data: allData } = await supabase
         .from('outreach_contacts')
-        .select('status, tier');
+        .select('status, tier, reply_sentiment');
 
       const totalByStatus: Record<string, number> = {};
       const totalByTier: Record<string, number> = {};
@@ -81,6 +81,21 @@ export function useOutreachStats() {
         if (c.tier) totalByTier[c.tier] = (totalByTier[c.tier] || 0) + 1;
       });
 
+      // All-time totals calculated from actual contact records
+      const totalSent = (allData || []).filter(c =>
+        ['enrolled', 'replied', 'converted', 'bounced'].includes(c.status)
+      ).length;
+      const totalReplied = (allData || []).filter(c =>
+        ['replied', 'converted'].includes(c.status)
+      ).length;
+      const totalPositive = (allData || []).filter(c =>
+        c.reply_sentiment === 'positive' || c.status === 'converted'
+      ).length;
+      const totalBounced = totalByStatus['bounced'] ?? 0;
+      const totalDelivered = totalSent - totalBounced;
+      const replyRate = totalDelivered > 0 ? totalReplied / totalDelivered : 0;
+      const positiveReplyRate = totalDelivered > 0 ? totalPositive / totalDelivered : 0;
+
       return {
         todaySent,
         weekSent,
@@ -88,6 +103,13 @@ export function useOutreachStats() {
         weekPositive,
         totalByStatus,
         totalByTier,
+        totalSent,
+        totalReplied,
+        totalPositive,
+        totalBounced,
+        totalDelivered,
+        replyRate,
+        positiveReplyRate,
       };
     },
     refetchInterval: 60 * 1000,
