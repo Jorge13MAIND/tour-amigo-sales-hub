@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { relativeTime, formatShortDate } from '@/lib/format';
 import {
   Send, Eye, MessageSquare, ThumbsUp, ChevronDown, ChevronUp,
-  Search, ExternalLink, Copy, Check,
+  Search, ExternalLink, Copy, Check, Flame, MousePointerClick, Activity,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -106,6 +106,11 @@ export default function Outreach() {
           subtitle={
             <span className="text-[10px]">
               {stats?.totalDelivered ?? 0} delivered / {stats?.totalBounced ?? 0} bounced
+              {stats?.bounceRate != null && (
+                <span className={`ml-1 font-semibold ${stats.bounceRate < 0.05 ? 'text-emerald-600' : stats.bounceRate < 0.1 ? 'text-amber-600' : 'text-destructive'}`}>
+                  ({(stats.bounceRate * 100).toFixed(1)}% bounce)
+                </span>
+              )}
             </span>
           }
           icon={<Send className="h-4 w-4 text-orange-500" />}
@@ -157,6 +162,34 @@ export default function Outreach() {
           </span>
         </div>
       )}
+
+      {/* Engagement Intelligence */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          label="Warm Leads"
+          value={stats?.warmLeads ?? 0}
+          subtitle={<span className="text-[10px]">Engagement score {'>'}= 50</span>}
+          icon={<Flame className="h-4 w-4 text-orange-500" />}
+        />
+        <MetricCard
+          label="Avg Engagement"
+          value={stats?.avgEngagement ?? 0}
+          subtitle={<span className="text-[10px]">Across contacts with activity</span>}
+          icon={<Activity className="h-4 w-4 text-purple-500" />}
+        />
+        <MetricCard
+          label="Contacts w/ Opens"
+          value={stats?.contactsWithOpens ?? 0}
+          subtitle={<span className="text-[10px]">Opened at least 1 email</span>}
+          icon={<Eye className="h-4 w-4 text-blue-500" />}
+        />
+        <MetricCard
+          label="Contacts w/ Clicks"
+          value={stats?.contactsWithClicks ?? 0}
+          subtitle={<span className="text-[10px]">Clicked a link in email</span>}
+          icon={<MousePointerClick className="h-4 w-4 text-emerald-500" />}
+        />
+      </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -257,6 +290,22 @@ export default function Outreach() {
             <SelectItem value="tier_3">Tier 3</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={filters.sortBy || 'created_at'} onValueChange={v => setFilters(f => ({ ...f, sortBy: v as 'created_at' | 'engagement_score', page: 1 }))}>
+          <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue placeholder="Sort" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="created_at">Newest First</SelectItem>
+            <SelectItem value="engagement_score">Highest Engagement</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant={filters.warmOnly ? "default" : "outline"}
+          size="sm"
+          className="h-9 text-sm"
+          onClick={() => setFilters(f => ({ ...f, warmOnly: !f.warmOnly, page: 1 }))}
+        >
+          <Flame className="h-3.5 w-3.5 mr-1" />
+          Warm Only
+        </Button>
         <span className="text-xs text-muted-foreground ml-auto">{total} contacts</span>
       </div>
 
@@ -271,6 +320,7 @@ export default function Outreach() {
                   <th className="p-3 font-medium">Company</th>
                   <th className="p-3 font-medium">Tier</th>
                   <th className="p-3 font-medium">ICP</th>
+                  <th className="p-3 font-medium">Score</th>
                   <th className="p-3 font-medium">Status</th>
                   <th className="p-3 font-medium">Angle</th>
                   <th className="p-3 font-medium">Sent</th>
@@ -282,7 +332,7 @@ export default function Outreach() {
                   <ContactRow key={c.id} contact={c} expanded={expandedRow === c.id} onToggle={() => setExpandedRow(expandedRow === c.id ? null : c.id)} />
                 ))}
                 {contacts.length === 0 && (
-                  <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No contacts found</td></tr>
+                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No contacts found</td></tr>
                 )}
               </tbody>
             </table>
@@ -328,6 +378,15 @@ function ContactRow({ contact: c, expanded, onToggle }: { contact: OutreachConta
         <td className="p-3 text-muted-foreground">{c.company || '--'}</td>
         <td className="p-3">{c.tier ? <Badge variant="secondary" className={TIER_COLORS[c.tier]}>{c.tier.replace('_', ' ')}</Badge> : '--'}</td>
         <td className="p-3 font-mono text-xs">{c.icp_score}</td>
+        <td className="p-3">
+          <Badge variant="secondary" className={
+            c.engagement_score >= 50 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold' :
+            c.engagement_score >= 20 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' :
+            'bg-muted text-muted-foreground'
+          }>
+            {c.engagement_score}
+          </Badge>
+        </td>
         <td className="p-3"><Badge variant="secondary" className={STATUS_COLORS[c.status] || ''}>{c.status}</Badge></td>
         <td className="p-3 text-xs text-muted-foreground capitalize">{c.email_angle?.replace(/_/g, ' ') || '--'}</td>
         <td className="p-3 text-xs text-muted-foreground">{c.email_sent_at ? relativeTime(c.email_sent_at) : '--'}</td>
@@ -335,7 +394,7 @@ function ContactRow({ contact: c, expanded, onToggle }: { contact: OutreachConta
       </tr>
       {expanded && (
         <tr className="bg-muted/20">
-          <td colSpan={8} className="p-4">
+          <td colSpan={9} className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
               {/* Contact Details */}
               <div className="space-y-2">
@@ -362,6 +421,9 @@ function ContactRow({ contact: c, expanded, onToggle }: { contact: OutreachConta
                     )}
                   </p>
                 )}
+                {c.open_count > 0 && <p>Opens: {c.open_count}{c.last_open_at ? ` (last: ${relativeTime(c.last_open_at)})` : ''}</p>}
+                {c.click_count > 0 && <p>Clicks: {c.click_count}{c.last_click_at ? ` (last: ${relativeTime(c.last_click_at)})` : ''}</p>}
+                {c.engagement_score > 0 && <p>Engagement: <span className="font-semibold">{c.engagement_score}</span></p>}
                 {c.bounced && <p>Bounced</p>}
                 {c.meeting_booked && <p>Meeting booked</p>}
               </div>

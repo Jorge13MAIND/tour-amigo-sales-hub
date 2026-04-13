@@ -27,6 +27,7 @@ const DealRoomList = lazy(() => import("./pages/DealRoomList"));
 const DealRoom = lazy(() => import("./pages/DealRoom"));
 const Outreach = lazy(() => import("./pages/Outreach"));
 const MorningBrief = lazy(() => import("./pages/MorningBrief"));
+const AtlasAI = lazy(() => import("./pages/AtlasAI"));
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="/deal-rooms" element={<Suspense fallback={<LazyFallback />}><DealRoomList /></Suspense>} />
         <Route path="/deal-rooms/:id" element={<Suspense fallback={<LazyFallback />}><DealRoom /></Suspense>} />
         <Route path="/outreach" element={<Suspense fallback={<LazyFallback />}><Outreach /></Suspense>} />
+        <Route path="/atlas" element={<Suspense fallback={<LazyFallback />}><AtlasAI /></Suspense>} />
         <Route path="/brief" element={<Suspense fallback={<LazyFallback />}><MorningBrief /></Suspense>} />
         {/* /brief and / render the same component — Brief is home */}
       </Route>

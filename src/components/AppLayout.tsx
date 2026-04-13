@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { HeaderBar } from './HeaderBar';
@@ -9,6 +9,8 @@ import { useRealtimeNotifications } from '@/hooks/useNotifications';
 
 export function AppLayout() {
   const { isChatOpen, setIsChatOpen } = useAppContext();
+  const location = useLocation();
+  const isAtlasPage = location.pathname === '/atlas';
   useRealtimeNotifications();
 
   return (
@@ -23,7 +25,7 @@ export function AppLayout() {
         </div>
       </div>
       <DealDetailPanel />
-      <AIChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      {!isAtlasPage && <AIChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />}
     </SidebarProvider>
   );
 }

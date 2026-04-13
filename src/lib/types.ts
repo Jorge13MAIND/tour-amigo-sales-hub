@@ -311,6 +311,12 @@ export interface OutreachContact {
   bounced: boolean;
   meeting_booked: boolean;
   hubspot_deal_id: string | null;
+  engagement_score: number;
+  open_count: number;
+  click_count: number;
+  last_open_at: string | null;
+  last_click_at: string | null;
+  engagement_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -370,5 +376,14 @@ export interface ChatMessage {
   actions_triggered: Record<string, unknown> | null;
   model: string | null;
   tokens_used: number | null;
+  conversation_id: string | null;
+  conversation_title: string | null;
   created_at: string;
+}
+
+export interface Conversation {
+  conversation_id: string;
+  conversation_title: string | null;
+  last_message_at: string;
+  message_count: number;
 }

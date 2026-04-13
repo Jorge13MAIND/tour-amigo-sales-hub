@@ -1,4 +1,4 @@
-import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun as SunIcon, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target, LogOut, Sunrise } from 'lucide-react';
+import { LayoutGrid, Columns3, ClipboardCheck, TrendingUp, Sun as SunIcon, Moon, Bot, Route, ShieldCheck, Lightbulb, Building2, Target, LogOut, Sunrise, Sparkles } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useDailyMetrics } from '@/hooks/useDailyMetrics';
 import { useAtRiskCount } from '@/hooks/useDeals';
@@ -45,6 +45,7 @@ export function AppSidebar() {
 
   const mainItems: NavItem[] = [
     { title: 'Brief', url: '/', icon: Sunrise, badge: 0, badgeColor: '' },
+    { title: 'ATLAS AI', url: '/atlas', icon: Sparkles, badge: 0, badgeColor: '' },
     { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid, badge: 0, badgeColor: '' },
     { title: 'Pipeline', url: '/pipeline', icon: Columns3, badge: atRiskCount || 0, badgeColor: 'bg-destructive text-destructive-foreground' },
     { title: 'Deal Rooms', url: '/deal-rooms', icon: Building2, badge: 0, badgeColor: '' },

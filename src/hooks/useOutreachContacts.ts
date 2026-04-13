@@ -10,20 +10,23 @@ export interface OutreachFilters {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: 'created_at' | 'engagement_score';
+  warmOnly?: boolean;
 }
 
 export function useOutreachContacts(filters: OutreachFilters = {}) {
-  const { status, tier, search, dateFrom, dateTo, page = 1, pageSize = 25 } = filters;
+  const { status, tier, search, dateFrom, dateTo, page = 1, pageSize = 25, sortBy = 'created_at', warmOnly } = filters;
   return useQuery({
     queryKey: ['outreach-contacts', filters],
     queryFn: async () => {
       let query = supabase
         .from('outreach_contacts')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false });
+        .order(sortBy, { ascending: false });
 
       if (status && status !== 'all') query = query.eq('status', status);
       if (tier && tier !== 'all') query = query.eq('tier', tier);
+      if (warmOnly) query = query.gte('engagement_score', 50);
       if (search && search.trim()) {
         const s = search.trim().toLowerCase();
         query = query.or(`first_name.ilike.%${s}%,last_name.ilike.%${s}%,company.ilike.%${s}%,email.ilike.%${s}%`);
@@ -72,7 +75,7 @@ export function useOutreachStats() {
       // Total by status — all-time counts from outreach_contacts
       const { data: allData } = await supabase
         .from('outreach_contacts')
-        .select('status, tier, reply_sentiment');
+        .select('status, tier, reply_sentiment, engagement_score, open_count, click_count');
 
       const totalByStatus: Record<string, number> = {};
       const totalByTier: Record<string, number> = {};
@@ -96,6 +99,14 @@ export function useOutreachStats() {
       const replyRate = totalDelivered > 0 ? totalReplied / totalDelivered : 0;
       const positiveReplyRate = totalDelivered > 0 ? totalPositive / totalDelivered : 0;
 
+      // Engagement stats
+      const warmLeads = (allData || []).filter(c => (c as any).engagement_score >= 50).length;
+      const contactsWithOpens = (allData || []).filter(c => (c as any).open_count > 0).length;
+      const contactsWithClicks = (allData || []).filter(c => (c as any).click_count > 0).length;
+      const scores = (allData || []).map(c => (c as any).engagement_score as number).filter(s => s > 0);
+      const avgEngagement = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      const bounceRate = totalSent > 0 ? totalBounced / totalSent : 0;
+
       return {
         todaySent,
         weekSent,
@@ -110,6 +121,11 @@ export function useOutreachStats() {
         totalDelivered,
         replyRate,
         positiveReplyRate,
+        warmLeads,
+        contactsWithOpens,
+        contactsWithClicks,
+        avgEngagement,
+        bounceRate,
       };
     },
     refetchInterval: 60 * 1000,
